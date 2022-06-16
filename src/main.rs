@@ -2,16 +2,16 @@ mod commands;
 mod handler;
 mod utils;
 
-use std::{collections::HashSet, env, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
 use crate::handler::*;
 use dotenv::dotenv;
 use serenity::{
     async_trait,
     client::{bridge::gateway::ShardManager, Context, EventHandler},
-    framework::StandardFramework,
+    framework::{StandardFramework},
     http::Http,
-    model::{channel::Message, event::ResumedEvent, gateway::Ready},
+    model::{channel::Message, event::ResumedEvent, gateway::Ready, interactions::{application_command::{ApplicationCommand, ApplicationCommandOptionType}, Interaction}},
     prelude::{GatewayIntents, Mutex, TypeMapKey},
     Client,
 };
@@ -30,6 +30,28 @@ struct Handler;
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
         info!("Connected as {}", ready.user.name);
+        // let result = ApplicationCommand::set_global_application_commands(&ctx.http, |f| {
+        //     f.create_application_command(|command| {
+        //         command
+        //             .name("mcv")
+        //             .description("Everything about MCV Scraper")
+        //             .create_option(|option| {
+        //                 option
+        //                     .name("all_course")
+        //                     .kind(ApplicationCommandOptionType::SubCommand)
+        //                     .description("Get all course with a year")
+                            
+        //             })
+                    
+        //     })
+        // }).await;
+
+        // if let Err(e) = result {
+        //     error!("Failed to setup global slash command: {}", e.to_string());
+        // } else {
+        //     info!("Set global slash successfully");
+        // }
+
     }
 
     async fn resume(&self, _: Context, _: ResumedEvent) {
@@ -66,7 +88,8 @@ async fn main() {
     let framework = StandardFramework::new()
         .configure(|c| c.owners(owners).prefix('~'))
         .group(&GENERAL_GROUP)
-        .group(&MISC_GROUP);
+        .group(&MISC_GROUP)
+        .group(&MCVNOTIFY_GROUP);
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES

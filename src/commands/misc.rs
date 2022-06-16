@@ -1,14 +1,14 @@
 use serenity::{framework::standard::{macros::command, Args, CommandResult}, client::{Context, bridge::gateway::ShardId}, model::{channel::Message}, utils::MessageBuilder};
-use crate::{ShardManagerContainer, utils::{http::get_raw_http_response, env::get_env}};
-use scraper::{Html, Selector};
+use crate::{ShardManagerContainer, utils::{http::get_raw_http_response_mcv, env::get_env}};
+use scraper::{Html, Selector, ElementRef};
 use chrono::{prelude::*, Duration};
 
 #[derive(Debug)]
 struct Course {
     course_no: String,
     course_title: String,
-    course_year: String,
-    course_semester: String,
+    course_year: i16,
+    course_semester: i16,
     course_href: String
 }
 
@@ -20,6 +20,11 @@ impl Course {
     pub fn get_description(&self) -> String {
         format!("{}", self.course_title)
     }
+}
+
+struct Announcement {
+    title: String,
+    href: String
 }
 
 #[command]
@@ -96,7 +101,7 @@ pub async fn test_embed(ctx: &Context, msg: &Message, _: Args) -> CommandResult 
             e.description("This is a description of the embed!");
             e.color(0x018ada);
             e.url("https://google.com");
-            e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", get_env("BASE_URL")));
+            e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", get_env("MCV_BASE_URL")));
             e.field("test", 123, false);
             e.field("test", 12312321, false);
             e.field("test", "asdas", false);
@@ -104,18 +109,22 @@ pub async fn test_embed(ctx: &Context, msg: &Message, _: Args) -> CommandResult 
             e
         });
 
-        
-
         m
     }).await?;
 
     Ok(())
 }
 
-#[command]
+#[command("all_course")]
 pub async fn test_mcv(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
-    let base_url: String = get_env("BASE_URL");
-    let text = get_raw_http_response(&format!("{}?q=courseville", base_url)).await.unwrap();
+    let base_url: String = get_env("MCV_BASE_URL");
+    let text = get_raw_http_response_mcv(&format!("{}?q=courseville", base_url)).await.unwrap();
+    if text.contains("Please login with either of the following choices.") {
+        msg.channel_id.send_message(&ctx.http, |f| {
+            f.content("Please contact bot creator to login MCV")
+        }).await?;
+        return Ok(());
+    }
 
     // Tokio try to make it thread-safe but Html does not support 'Send' impl
     let get_all_course = || {
@@ -129,20 +138,44 @@ pub async fn test_mcv(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
                 course_no: get_key("course_no"),
                 course_title: get_key("title"),
                 course_href: format!("{}{}", base_url, get_key("href")),
-                course_semester: get_key("semester"),
-                course_year: get_key("year"),
+                course_semester: get_key("semester").parse::<i16>().unwrap(),
+                course_year: get_key("year").parse::<i16>().unwrap()
             }
         }).collect::<Vec<Course>>()
     };
 
     let all_course = get_all_course();
+    let filter_course: Vec<&Course> = all_course.iter().filter(|course| {
+        let msg_list: Vec<&str> = msg.content.split(" ").collect();
+        let msg_len = msg_list.len();
+        if msg_len <= 2 {
+            return true
+        }
+
+        let course_year: i16 = msg_list[2].parse().unwrap_or(-1);
+        if msg_len <= 3 {
+            if course_year == course.course_year {
+                return true
+            }
+            return false
+        }
+
+        let course_semester: i16 = msg_list[3].parse().unwrap_or(-1);
+        if msg_len <= 4 {
+            if course_year == course.course_year && course_semester == course.course_semester {
+                return true
+            }
+            return false
+        }
+        false
+    }).collect();
 
     msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(move |e| {
             e.title("MCV Notify");
             e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", base_url));
 
-            all_course.iter().for_each(|course| {
+            filter_course.iter().for_each(|course| {
                 e.field(course.get_title(), course.get_description(), true);
             });
 
@@ -152,6 +185,52 @@ pub async fn test_mcv(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
             })
         })
     }).await?;
+
+    Ok(())
+}
+
+#[command("announce")]
+pub async fn test_get_announcement(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
+    let base_url: String = get_env("MCV_BASE_URL");
+    let text = get_raw_http_response_mcv(&format!("{}?q=courseville", base_url)).await.unwrap();
+    if text.contains("Please login with either of the following choices.") {
+        msg.channel_id.send_message(&ctx.http, |f| {
+            f.content("Please contact bot creator to login MCV")
+        }).await?;
+        return Ok(());
+    }
+
+    let get_all_annoucement = || {
+        let selector = Selector::parse("*[aria-label='Course announcements']").unwrap();
+        let result = Html::parse_document(&text);
+        let tbody = result.select(&selector).next().unwrap();
+
+        tbody.children().map(|tr| {
+            let mut child = tr.children();
+            let td_date = child.next().unwrap();
+            let date_element = ElementRef::wrap(td_date.first_child().unwrap().value().as_element().unwrap()).unwrap();
+            let date = date_element.inner_html();
+
+            let td_description = child.next().unwrap();
+        }).collect::<Vec<_>>()
+    };
+
+    // msg.channel_id.send_message(&ctx.http, |m| {
+    //     m.embed(|e| {
+    //         e.title("Announcement for ");
+    //         e.description("This is a description of the embed!");
+    //         e.color(0x018ada);
+    //         e.url("https://google.com");
+    //         e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", get_env("MCV_BASE_URL")));
+    //         e.field("test", 123, false);
+    //         e.field("test", 12312321, false);
+    //         e.field("test", "asdas", false);
+
+    //         e
+    //     });
+
+    //     m
+    // }).await?;
 
     Ok(())
 }

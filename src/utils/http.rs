@@ -1,11 +1,13 @@
 use reqwest::header::{COOKIE, HeaderMap, HeaderValue};
 
-const SESSION_KEY: &str = "SESSeb912a58562fbbdf6ad5e9a19524d1c0";
-const SESSION_VALUE: &str = "mf1cfn2vhl1f2srjugrv8qvov3";
-pub async fn get_raw_http_response(url: &str) -> Result<String, Box<dyn std::error::Error>> {
+use crate::utils::env::get_env;
+
+pub async fn get_raw_http_response_mcv(url: &str) -> Result<String, Box<dyn std::error::Error>> {
     let mut request_headers = HeaderMap::new();
-    
-    let cookie_header = format!("{}={}", SESSION_KEY, SESSION_VALUE);
+    let session_key: String = get_env("MCV_SESSION_KEY");
+    let session_value: String = get_env("MCV_SESSION_VALUE");
+
+    let cookie_header = format!("{}={}", session_key, session_value);
     request_headers.insert(COOKIE, HeaderValue::from_str(&cookie_header).unwrap());
     let client = reqwest::ClientBuilder::new()
             .default_headers(request_headers)

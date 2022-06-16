@@ -6,5 +6,10 @@ use crate::commands::{math::*, misc::*};
 pub struct General;
 
 #[group]
-#[commands(ping, latency, test_embed, test_mcv)]
+#[commands(ping, latency, test_embed)]
 pub struct Misc;
+
+#[group]
+#[prefix = "mcv"]
+#[commands(test_mcv)]
+pub struct McvNotify;
