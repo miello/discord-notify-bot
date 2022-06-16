@@ -1,7 +1,15 @@
-use serenity::{framework::standard::{macros::command, Args, CommandResult}, client::{Context, bridge::gateway::ShardId}, model::{channel::Message}, utils::MessageBuilder};
-use crate::{ShardManagerContainer, utils::{http::get_raw_http_response_mcv, env::get_env}};
-use scraper::{Html, Selector, ElementRef};
+use crate::{
+    utils::{env::get_env, http::get_raw_http_response_mcv},
+    ShardManagerContainer,
+};
 use chrono::{prelude::*, Duration};
+use scraper::{ElementRef, Html, Selector};
+use serenity::{
+    client::{bridge::gateway::ShardId, Context},
+    framework::standard::{macros::command, Args, CommandResult},
+    model::channel::Message,
+    utils::{EmbedMessageBuilding, MessageBuilder},
+};
 
 #[derive(Debug)]
 struct Course {
@@ -9,13 +17,16 @@ struct Course {
     course_title: String,
     course_year: i16,
     course_semester: i16,
-    course_href: String
+    course_href: String,
 }
 
 impl Course {
     pub fn get_title(&self) -> String {
-        format!("{} ({}/{})", self.course_no, self.course_year, self.course_semester)
-    } 
+        format!(
+            "{} ({}/{})",
+            self.course_no, self.course_year, self.course_semester
+        )
+    }
 
     pub fn get_description(&self) -> String {
         format!("{}", self.course_title)
@@ -24,7 +35,8 @@ impl Course {
 
 struct Announcement {
     title: String,
-    href: String
+    date: String,
+    href: String,
 }
 
 #[command]
@@ -34,20 +46,19 @@ pub async fn ping(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
         Err(why) => {
             println!("Error getting channel: {:?}", why);
             None
-        },
+        }
     };
 
     let channel = find_channel.unwrap();
 
     let response = MessageBuilder::new()
-                .push("User ")
-                .push_bold_safe(&msg.author.name)
-                .push(" used the 'ping' command in the ")
-                .mention(&channel)
-                .push(" channel")
-                .build();
+        .push("User ")
+        .push_bold_safe(&msg.author.name)
+        .push(" used the 'ping' command in the ")
+        .mention(&channel)
+        .push(" channel")
+        .build();
 
-    
     if let Err(why) = msg.channel_id.say(&ctx.http, &response).await {
         println!("Error sending message: {:?}", why);
     };
@@ -62,7 +73,8 @@ pub async fn latency(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
     let shard_manager = match data.get::<ShardManagerContainer>() {
         Some(v) => v,
         None => {
-            msg.reply(ctx, "There was a problem getting the shard manager").await?;
+            msg.reply(ctx, "There was a problem getting the shard manager")
+                .await?;
 
             return Ok(());
         }
@@ -77,40 +89,45 @@ pub async fn latency(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
             msg.reply(ctx, "No shard found").await?;
 
             return Ok(());
-        },
+        }
     };
 
     match runner.latency {
         Some(latency) => {
-            msg.reply(ctx, &format!("The shard latency is {:?}", latency)).await?;
-        },
+            msg.reply(ctx, &format!("The shard latency is {:?}", latency))
+                .await?;
+        }
         None => {
             msg.reply(ctx, "Error when get latency from shard").await?;
         }
     }
-
 
     Ok(())
 }
 
 #[command]
 pub async fn test_embed(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
-    msg.channel_id.send_message(&ctx.http, |m| {
-        m.embed(|e| {
-            e.title("Daily MCV");
-            e.description("This is a description of the embed!");
-            e.color(0x018ada);
-            e.url("https://google.com");
-            e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", get_env("MCV_BASE_URL")));
-            e.field("test", 123, false);
-            e.field("test", 12312321, false);
-            e.field("test", "asdas", false);
+    msg.channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.title("Daily MCV");
+                e.description("This is a description of the embed!");
+                e.color(0x018ada);
+                e.url("https://google.com");
+                e.thumbnail(format!(
+                    "{}sites/all/modules/courseville/files/logo/cv-logo.png",
+                    get_env("MCV_BASE_URL")
+                ));
+                e.field("test", 123, false);
+                e.field("test", 12312321, false);
+                e.field("test", "asdas", false);
 
-            e
-        });
+                e
+            });
 
-        m
-    }).await?;
+            m
+        })
+        .await?;
 
     Ok(())
 }
@@ -118,73 +135,86 @@ pub async fn test_embed(ctx: &Context, msg: &Message, _: Args) -> CommandResult 
 #[command("all_course")]
 pub async fn test_mcv(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
     let base_url: String = get_env("MCV_BASE_URL");
-    let text = get_raw_http_response_mcv(&format!("{}?q=courseville", base_url)).await.unwrap();
+    let text = get_raw_http_response_mcv(&format!("{}?q=courseville", base_url))
+        .await
+        .unwrap();
     if text.contains("Please login with either of the following choices.") {
-        msg.channel_id.send_message(&ctx.http, |f| {
-            f.content("Please contact bot creator to login MCV")
-        }).await?;
+        msg.channel_id
+            .send_message(&ctx.http, |f| {
+                f.content("Please contact bot creator to login MCV")
+            })
+            .await?;
         return Ok(());
     }
 
     // Tokio try to make it thread-safe but Html does not support 'Send' impl
     let get_all_course = || {
         let selector = Selector::parse("*[course_no]").unwrap();
-        Html::parse_document(&text).select(&selector).map(|f| {
-            let value = f.value();
-            let get_key = |key: &str| {
-                value.attr(key).unwrap_or(&String::new()).to_string()
-            };
-            Course {
-                course_no: get_key("course_no"),
-                course_title: get_key("title"),
-                course_href: format!("{}{}", base_url, get_key("href")),
-                course_semester: get_key("semester").parse::<i16>().unwrap(),
-                course_year: get_key("year").parse::<i16>().unwrap()
-            }
-        }).collect::<Vec<Course>>()
+        Html::parse_document(&text)
+            .select(&selector)
+            .map(|f| {
+                let value = f.value();
+                let get_key = |key: &str| value.attr(key).unwrap_or(&String::new()).to_string();
+                Course {
+                    course_no: get_key("course_no"),
+                    course_title: get_key("title"),
+                    course_href: format!("{}{}", base_url, get_key("href")),
+                    course_semester: get_key("semester").parse::<i16>().unwrap(),
+                    course_year: get_key("year").parse::<i16>().unwrap(),
+                }
+            })
+            .collect::<Vec<Course>>()
     };
 
     let all_course = get_all_course();
-    let filter_course: Vec<&Course> = all_course.iter().filter(|course| {
-        let msg_list: Vec<&str> = msg.content.split(" ").collect();
-        let msg_len = msg_list.len();
-        if msg_len <= 2 {
-            return true
-        }
-
-        let course_year: i16 = msg_list[2].parse().unwrap_or(-1);
-        if msg_len <= 3 {
-            if course_year == course.course_year {
-                return true
+    let filter_course: Vec<&Course> = all_course
+        .iter()
+        .filter(|course| {
+            let msg_list: Vec<&str> = msg.content.split(" ").collect();
+            let msg_len = msg_list.len();
+            if msg_len <= 2 {
+                return true;
             }
-            return false
-        }
 
-        let course_semester: i16 = msg_list[3].parse().unwrap_or(-1);
-        if msg_len <= 4 {
-            if course_year == course.course_year && course_semester == course.course_semester {
-                return true
+            let course_year: i16 = msg_list[2].parse().unwrap_or(-1);
+            if msg_len <= 3 {
+                if course_year == course.course_year {
+                    return true;
+                }
+                return false;
             }
-            return false
-        }
-        false
-    }).collect();
 
-    msg.channel_id.send_message(&ctx.http, |m| {
-        m.embed(move |e| {
-            e.title("MCV Notify");
-            e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", base_url));
+            let course_semester: i16 = msg_list[3].parse().unwrap_or(-1);
+            if msg_len <= 4 {
+                if course_year == course.course_year && course_semester == course.course_semester {
+                    return true;
+                }
+                return false;
+            }
+            false
+        })
+        .collect();
 
-            filter_course.iter().for_each(|course| {
-                e.field(course.get_title(), course.get_description(), true);
-            });
+    msg.channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(move |e| {
+                e.title("MCV Notify");
+                e.thumbnail(format!(
+                    "{}sites/all/modules/courseville/files/logo/cv-logo.png",
+                    base_url
+                ));
 
-            e.footer(|footer| {
-                let current_time =  Utc::now() + Duration::hours(7);
-                footer.text(format!("Update at {}", current_time.to_rfc3339()))
+                filter_course.iter().for_each(|course| {
+                    e.field(course.get_title(), course.get_description(), true);
+                });
+
+                e.footer(|footer| {
+                    let current_time = Utc::now() + Duration::hours(7);
+                    footer.text(format!("Update at {}", current_time.to_rfc3339()))
+                })
             })
         })
-    }).await?;
+        .await?;
 
     Ok(())
 }
@@ -192,45 +222,102 @@ pub async fn test_mcv(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
 #[command("announce")]
 pub async fn test_get_announcement(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
     let base_url: String = get_env("MCV_BASE_URL");
-    let text = get_raw_http_response_mcv(&format!("{}?q=courseville", base_url)).await.unwrap();
+    let split_msg: Vec<&str> = msg.content.split(" ").collect();
+
+    if split_msg.len() != 3 {
+        msg.channel_id
+            .send_message(&ctx.http, |c| c.content("Expected course id"))
+            .await?;
+        return Ok(());
+    }
+    let course_id = split_msg[2];
+
+    let text = get_raw_http_response_mcv(&format!("{}?q=courseville/course/{}", base_url, course_id))
+        .await
+        .unwrap();
+        
     if text.contains("Please login with either of the following choices.") {
-        msg.channel_id.send_message(&ctx.http, |f| {
-            f.content("Please contact bot creator to login MCV")
-        }).await?;
+        msg.channel_id
+            .send_message(&ctx.http, |f| {
+                f.content("Please contact bot creator to login MCV")
+            })
+            .await?;
         return Ok(());
     }
 
-    let get_all_annoucement = || {
-        let selector = Selector::parse("*[aria-label='Course announcements']").unwrap();
-        let result = Html::parse_document(&text);
-        let tbody = result.select(&selector).next().unwrap();
+    if text.contains("It looks like you are not a member of this course yet.") {
+        msg.channel_id
+            .send_message(&ctx.http, |f| {
+                f.content("Bot owner does not enroll this course")
+            })
+            .await?;
+        return Ok(());
+    }
 
-        tbody.children().map(|tr| {
-            let mut child = tr.children();
-            let td_date = child.next().unwrap();
-            let date_element = ElementRef::wrap(td_date.first_child().unwrap().value().as_element().unwrap()).unwrap();
-            let date = date_element.inner_html();
+    let get_all_annoucement = |html: &str| {
+        let selector = Selector::parse("table[title='Course announcements']").unwrap();
+        let result = Html::parse_document(&html);
+        let title_el = result.select(&selector).next().unwrap();
+        title_el
+            .first_child()
+            .unwrap()
+            .children()
+            .map(|tr| {
+                println!("{:?}", tr.value().as_text());
+                let mut child = tr.children();
+                let td_date = child.next().unwrap();
+                let td_date_child = td_date.children().next().unwrap();
+                let date_element = ElementRef::wrap(td_date_child).unwrap();
 
-            let td_description = child.next().unwrap();
-        }).collect::<Vec<_>>()
+                // Date string
+                let date = date_element.inner_html();
+
+                let td_description = child.next().unwrap();
+                let td_description_child = td_description.children().next().unwrap();
+                let description_el = ElementRef::wrap(td_description_child).unwrap();
+
+                let title = description_el.inner_html();
+                let href = description_el
+                    .value()
+                    .attr("href")
+                    .unwrap_or("")
+                    .to_string();
+
+                Announcement { date, href, title }
+            })
+            .collect::<Vec<Announcement>>()
     };
 
-    // msg.channel_id.send_message(&ctx.http, |m| {
-    //     m.embed(|e| {
-    //         e.title("Announcement for ");
-    //         e.description("This is a description of the embed!");
-    //         e.color(0x018ada);
-    //         e.url("https://google.com");
-    //         e.thumbnail(format!("{}sites/all/modules/courseville/files/logo/cv-logo.png", get_env("MCV_BASE_URL")));
-    //         e.field("test", 123, false);
-    //         e.field("test", 12312321, false);
-    //         e.field("test", "asdas", false);
+    let get_course_title = |html: &str| {
+        let selector = Selector::parse(".courseville-course-title").unwrap();
+        let result = Html::parse_document(&html);
+        let title_div = ElementRef::wrap(result.select(&selector).next().unwrap().first_child().unwrap()).unwrap();
 
-    //         e
-    //     });
+        title_div.inner_html()
+    };
 
-    //     m
-    // }).await?;
+    let course_title = get_course_title(&text);
+    let all_announcement = get_all_annoucement(&text);
+
+    msg.channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                let title = format!("{} Announcement", course_title);
+                e.title(&title);
+
+                all_announcement.iter().for_each(|announce| {
+                    let mut builder = MessageBuilder::new();
+
+                    let title_url = builder.push_named_link_safe(&announce.date, &announce.href);
+                    e.field(title_url, &announce.title, false);
+                });
+
+                e
+            });
+
+            m
+        })
+        .await?;
 
     Ok(())
 }

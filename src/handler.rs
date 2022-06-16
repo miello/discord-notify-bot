@@ -11,5 +11,5 @@ pub struct Misc;
 
 #[group]
 #[prefix = "mcv"]
-#[commands(test_mcv)]
+#[commands(test_mcv, test_get_announcement)]
 pub struct McvNotify;
