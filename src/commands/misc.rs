@@ -10,6 +10,7 @@ use serenity::{
     model::channel::Message,
     utils::{EmbedMessageBuilding, MessageBuilder},
 };
+use tracing::log::{log, info};
 
 #[derive(Debug)]
 struct Course {
@@ -232,6 +233,10 @@ pub async fn test_get_announcement(ctx: &Context, msg: &Message, _: Args) -> Com
     }
     let course_id = split_msg[2];
 
+    // let text = get_raw_http_response_mcv("http://localhost:5500/src")
+    //     .await
+    //     .unwrap();
+
     let text = get_raw_http_response_mcv(&format!("{}?q=courseville/course/{}", base_url, course_id))
         .await
         .unwrap();
@@ -255,33 +260,24 @@ pub async fn test_get_announcement(ctx: &Context, msg: &Message, _: Args) -> Com
     }
 
     let get_all_annoucement = |html: &str| {
-        let selector = Selector::parse("table[title='Course announcements']").unwrap();
+        
+        let selector = Selector::parse("table[title='Course announcements'] > tbody > tr").unwrap();
         let result = Html::parse_document(&html);
-        let title_el = result.select(&selector).next().unwrap();
+        let title_el = result.select(&selector).collect::<Vec<_>>();
+
         title_el
-            .first_child()
-            .unwrap()
-            .children()
+            .iter()
             .map(|tr| {
-                println!("{:?}", tr.value().as_text());
-                let mut child = tr.children();
-                let td_date = child.next().unwrap();
-                let td_date_child = td_date.children().next().unwrap();
-                let date_element = ElementRef::wrap(td_date_child).unwrap();
+                let selector_td = Selector::parse("td").unwrap();
+                let mut tr_iter = tr.select(&selector_td);
+
+                let date_root = tr_iter.next().unwrap().first_child().unwrap();
+                let desc_root = tr_iter.next().unwrap().first_child().unwrap();
 
                 // Date string
-                let date = date_element.inner_html();
-
-                let td_description = child.next().unwrap();
-                let td_description_child = td_description.children().next().unwrap();
-                let description_el = ElementRef::wrap(td_description_child).unwrap();
-
-                let title = description_el.inner_html();
-                let href = description_el
-                    .value()
-                    .attr("href")
-                    .unwrap_or("")
-                    .to_string();
+                let date = ElementRef::wrap(date_root).unwrap().inner_html();
+                let title = ElementRef::wrap(desc_root).unwrap().inner_html();
+                let href = format!("{}{}", base_url, &desc_root.value().as_element().unwrap().attr("href").unwrap_or("").to_string());
 
                 Announcement { date, href, title }
             })
@@ -308,8 +304,8 @@ pub async fn test_get_announcement(ctx: &Context, msg: &Message, _: Args) -> Com
                 all_announcement.iter().for_each(|announce| {
                     let mut builder = MessageBuilder::new();
 
-                    let title_url = builder.push_named_link_safe(&announce.date, &announce.href);
-                    e.field(title_url, &announce.title, false);
+                    let desc = builder.push_named_link_safe(&announce.title, &announce.href);
+                    e.field(&announce.date, &desc, false);
                 });
 
                 e

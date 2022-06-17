@@ -11,7 +11,7 @@ use serenity::{
     client::{bridge::gateway::ShardManager, Context, EventHandler},
     framework::{StandardFramework},
     http::Http,
-    model::{channel::Message, event::ResumedEvent, gateway::Ready, interactions::{application_command::{ApplicationCommand, ApplicationCommandOptionType}, Interaction}},
+    model::{channel::Message, event::ResumedEvent, gateway::Ready},
     prelude::{GatewayIntents, Mutex, TypeMapKey},
     Client,
 };
