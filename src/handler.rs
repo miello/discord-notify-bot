@@ -1,5 +1,5 @@
 use serenity::framework::standard::macros::group;
-use crate::commands::{math::*, misc::*};
+use crate::commands::{math::*, misc::*, mcv_scraper::*};
 
 #[group]
 #[commands(multiply)]
@@ -11,5 +11,5 @@ pub struct Misc;
 
 #[group]
 #[prefix = "mcv"]
-#[commands(test_mcv, test_get_announcement)]
+#[commands(get_courses, get_announcement, get_assignment)]
 pub struct McvNotify;
