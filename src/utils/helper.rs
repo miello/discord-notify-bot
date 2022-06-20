@@ -1,4 +1,5 @@
 use scraper::{Selector, Html, ElementRef};
+use serenity::{utils::{MessageBuilder, EmbedMessageBuilding}, builder::CreateEmbed};
 
 #[derive(Debug)]
 pub struct Course {
@@ -45,6 +46,36 @@ impl Assignment {
 
     pub fn get_description(&self) -> String {
         format!("{} ", self.due_date)
+    }
+}
+
+pub struct Material {
+    title: String,
+    href: String,
+}
+
+pub struct MaterialFolder {
+    name: String,
+    material: Vec<Material>,
+}
+
+impl MaterialFolder {
+    pub fn embed_message(&self, e: &mut CreateEmbed, limit: u32) {
+        let mut desc = MessageBuilder::new();
+        let mut now = 0;
+        
+        self.material.iter().for_each(|material| {
+            if now == limit {
+                return
+            }
+            desc.push("- ");
+            desc.push_named_link(&material.title, &material.href);
+            desc.push_line("");
+            
+            now += 1;
+        });
+
+        e.field(&self.name, desc, false);
     }
 }
 
@@ -158,4 +189,58 @@ pub fn get_all_course(html: &str, base_url: &str) -> Vec<Course> {
             }
         })
         .collect()
+}
+
+pub fn get_all_material(html: &str, base_url: &str) -> Vec<MaterialFolder> {
+    let selector_folder = Selector::parse("section[aria-label='Course Materials'] *[data-folder]").unwrap();
+    let selector_general = Selector::parse("section[aria-label='Course Materials'] > * > table tbody tr").unwrap();
+
+    let result = Html::parse_document(&html);
+    let folder_el = result.select(&selector_folder);
+    let general_el = result.select(&selector_general);
+
+    let mut materials: Vec<MaterialFolder> = vec![];
+
+    let extract_material_detail = |el: ElementRef| -> Material {
+        let selector_title = Selector::parse("td[data-col='title'] > a").unwrap();
+        let selector_link = Selector::parse("td[data-col='action'] > a").unwrap();
+
+        let title_el = el.select(&selector_title).next().unwrap(); 
+
+        let title = title_el.inner_html();
+        let mut href = format!("{}{}", base_url, title_el.value().attr("href").unwrap().to_string());
+
+        if let Some(val) = el.select(&selector_link).next() {
+            href = val.value().attr("href").unwrap().to_string();
+        }
+        
+        Material {
+            title,
+            href,
+        }
+    };
+
+    let mut material_folder: Vec<MaterialFolder> = folder_el.map(|f| {
+        let selector_title = Selector::parse("button div[data-part='title']").unwrap();
+        let select_all_file = Selector::parse("table > tbody > tr").unwrap();
+        
+        let folder_title = f.select(&selector_title).next().unwrap().inner_html();
+        let material_list: Vec<Material> = f.select(&select_all_file).map(|el| extract_material_detail(el)).collect();
+        MaterialFolder {
+            name: folder_title,
+            material: material_list,
+        }
+    }).collect();
+    
+    let general_file: Vec<Material> = general_el.map(|f| {
+      extract_material_detail(f)  
+    }).collect();
+
+    materials.append(&mut material_folder);
+    materials.push(MaterialFolder {
+        name: String::from("Others"),
+        material: general_file
+    });
+
+    materials
 }

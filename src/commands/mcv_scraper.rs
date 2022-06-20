@@ -67,6 +67,7 @@ pub async fn get_courses(ctx: &Context, msg: &Message, _: Args) -> CommandResult
         .send_message(&ctx.http, |m| {
             m.embed(move |e| {
                 e.title("MCV Notify");
+                e.url(format!("{}?q=courseville", base_url));
                 e.thumbnail(format!(
                     "{}sites/all/modules/courseville/files/logo/cv-logo.png",
                     base_url
@@ -119,7 +120,9 @@ pub async fn get_announcement(ctx: &Context, msg: &Message, _: Args) -> CommandR
         .send_message(&ctx.http, |m| {
             m.embed(|e| {
                 let title = format!("{} Announcement", course_title);
+
                 e.title(&title);
+                e.url(format!("{}?q=courseville/course/{}", base_url, course_id));
                 e.thumbnail(format!(
                     "{}sites/all/modules/courseville/files/logo/cv-logo.png",
                     base_url
@@ -179,6 +182,10 @@ pub async fn get_assignment(ctx: &Context, msg: &Message, _: Args) -> CommandRes
                 let title = format!("{} Assignment", course_title);
 
                 e.title(&title);
+                e.url(format!(
+                    "{}?q=courseville/course/{}/assignment",
+                    base_url, course_id
+                ));
                 e.thumbnail(format!(
                     "{}sites/all/modules/courseville/files/logo/cv-logo.png",
                     base_url
@@ -204,5 +211,57 @@ pub async fn get_assignment(ctx: &Context, msg: &Message, _: Args) -> CommandRes
 
 #[command("file")]
 pub async fn get_materials(ctx: &Context, msg: &Message, _: Args) -> CommandResult {
+    let base_url: String = get_env("MCV_BASE_URL");
+    let split_msg: Vec<&str> = msg.content.split(" ").collect();
+
+    if split_msg.len() != 3 {
+        msg.channel_id
+            .send_message(&ctx.http, |c| c.content("Expected course id"))
+            .await?;
+        return Ok(());
+    }
+    let course_id = split_msg[2];
+
+    let text = get_raw_http_response_mcv(&format!(
+        "{}?q=courseville/course/{}",
+        base_url, course_id
+    ))
+        .await
+        .unwrap();
+
+    if let Some(val) = get_error_message(&text) {
+        msg.channel_id
+        .send_message(&ctx.http, |f| {
+            f.content(val)
+        })
+        .await?;
+
+        return Ok(());
+    }
+
+    let materials = get_all_material(&text, &base_url);
+    let course_title = get_course_title(&text);
+    
+    let res =msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|e| {
+            let title = format!("{} Materials", course_title);
+            e.title(&title);
+            e.url(&format!(
+                "{}?q=courseville/course/{}",
+                base_url, course_id
+            ));
+            e.thumbnail(format!(
+                "{}sites/all/modules/courseville/files/logo/cv-logo.png",
+                base_url
+            ));
+
+            materials.iter().for_each(|folder| {
+                folder.embed_message(e, 3)
+            });
+
+            e
+        })
+    }).await;
+
     Ok(())
 }
