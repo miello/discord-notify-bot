@@ -242,7 +242,7 @@ pub async fn get_materials(ctx: &Context, msg: &Message, _: Args) -> CommandResu
     let materials = get_all_material(&text, &base_url);
     let course_title = get_course_title(&text);
     
-    let res =msg.channel_id.send_message(&ctx.http, |m| {
+    let res = msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| {
             let title = format!("{} Materials", course_title);
             e.title(&title);
