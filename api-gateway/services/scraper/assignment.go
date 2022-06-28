@@ -35,7 +35,6 @@ func UpdateAssignment() error {
 			return err
 		}
 
-		defer res.Body.Close()
 		doc, err := goquery.NewDocumentFromReader(res.Body)
 
 		if err != nil {
@@ -69,6 +68,8 @@ func UpdateAssignment() error {
 				CourseID: row.ID,
 			})
 		})
+
+		res.Body.Close()
 
 		log.Printf("Update course %v successfully\n", row.Title)
 		time.Sleep(10 * time.Second)
