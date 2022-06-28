@@ -73,8 +73,9 @@ func UpdateAnnouncements() error {
 			}).Create(&announcement)
 		})
 
-		time.Sleep(5 * time.Second)
 		res.Body.Close()
+		log.Printf("Update announcement %v successfully\n", row.Title)
+		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

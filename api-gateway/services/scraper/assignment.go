@@ -71,7 +71,7 @@ func UpdateAssignment() error {
 
 		res.Body.Close()
 
-		log.Printf("Update course %v successfully\n", row.Title)
+		log.Printf("Update assignment %v successfully\n", row.Title)
 		time.Sleep(10 * time.Second)
 	}
 

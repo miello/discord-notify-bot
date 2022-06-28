@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 )
@@ -30,6 +31,11 @@ func GetHTML(path string) (*http.Response, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if res.StatusCode != 200 {
+		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+		return nil, fmt.Errorf("error with status code: %v", res.StatusCode)
 	}
 
 	return res, err

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"gorm.io/gorm/clause"
@@ -24,10 +25,6 @@ func UpdateCourses() error {
 	}
 
 	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
-		return fmt.Errorf("error with status code: %v", res.StatusCode)
-	}
 
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
@@ -61,6 +58,9 @@ func UpdateCourses() error {
 			DoUpdates: clause.AssignmentColumns([]string{"title", "key", "href", "semester", "year"}),
 		}).Create(&course)
 	})
+
+	time.Sleep(5 * time.Second)
+	log.Println("Update available courses successfully")
 
 	return nil
 }

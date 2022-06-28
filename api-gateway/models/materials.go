@@ -1,11 +1,18 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Material struct {
-	gorm.Model
-	Title    string
-	Href     string
-	CourseID string
-	Course   Course
+	Href       string `gorm:"primaryKey"`
+	Title      string
+	FolderName string
+	CourseID   string
+	Course     Course
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletedAt  gorm.DeletedAt `gorm:"index"`
 }
