@@ -1,11 +1,17 @@
-module github.com/miello/mcv-notify/api-gateway
+module api-gateway
 
 go 1.17
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/gofiber/fiber/v2 v2.34.1
 	gorm.io/driver/postgres v1.3.7
 	gorm.io/gorm v1.23.6
+)
+
+require (
+	github.com/andybalholm/cascadia v1.3.1 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 )
 
 require (
@@ -20,7 +26,7 @@ require (
 	github.com/jackc/pgx/v4 v4.16.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
-	github.com/joho/godotenv v1.4.0 // indirect
+	github.com/joho/godotenv v1.4.0
 	github.com/klauspost/compress v1.15.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.37.0 // indirect
