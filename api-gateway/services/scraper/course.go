@@ -85,7 +85,17 @@ func (c *CourseCron) UpdateCourses() error {
 	return nil
 }
 
-func (c *CourseService) GetAvailableCourses(year string, semester string, name string) ([]models.Course, error) {
+func convertCourseToView(course *models.Course) models.CourseView {
+	return models.CourseView{
+		Key:      course.Key,
+		Title:    course.Title,
+		Href:     course.Href,
+		Semester: course.Semester,
+		Year:     course.Year,
+	}
+}
+
+func (c *CourseService) GetAvailableCourses(year string, semester string, name string) ([]models.CourseView, error) {
 	var all_course []models.Course
 	var err error
 
@@ -120,5 +130,25 @@ func (c *CourseService) GetAvailableCourses(year string, semester string, name s
 		return nil, fmt.Errorf("500: %v", tx.Error.Error())
 	}
 
-	return all_course, nil
+	var converted_course []models.CourseView
+
+	for _, c2 := range all_course {
+		converted_course = append(converted_course, convertCourseToView(&c2))
+	}
+
+	return converted_course, nil
+}
+
+func (c *CourseService) GetCourseIdByName(name string) (string, error) {
+	var course models.Course
+
+	tx := c.db.First(&models.Course{
+		Title: name,
+	}).Find(&course)
+
+	if tx.Error != nil {
+		return "", fmt.Errorf("404: Not found")
+	}
+
+	return course.ID, nil
 }

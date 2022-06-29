@@ -12,9 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
-
-func DBConnect() error {
+func DBConnect() *gorm.DB {
+	var DB *gorm.DB
 	var err error
 
 	DB_HOST := os.Getenv("DATABASE_HOST")
@@ -41,9 +40,9 @@ func DBConnect() error {
 
 	log.Println("Init database successfully")
 
-	return nil
+	return DB
 }
 
-func DBMigrate() error {
-	return DB.AutoMigrate(&models.Material{}, &models.Course{}, &models.Assignment{}, &models.Announcement{})
+func DBMigrate(db *gorm.DB) error {
+	return db.AutoMigrate(&models.Material{}, &models.Course{}, &models.Assignment{}, &models.Announcement{})
 }

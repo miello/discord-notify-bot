@@ -13,3 +13,9 @@ type Assignment struct {
 	Course   Course
 	Date     string `json:"dueDate"`
 }
+
+type AssignmentView struct {
+	Title string `json:"title"`
+	Href  string `json:"href"`
+	Date  string `json:"dueDate"`
+}

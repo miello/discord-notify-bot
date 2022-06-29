@@ -15,7 +15,8 @@ import (
 )
 
 type AssignmentService struct {
-	db *gorm.DB
+	db            *gorm.DB
+	courseService *CourseService
 }
 
 type AssignmentCron struct {
@@ -24,7 +25,8 @@ type AssignmentCron struct {
 
 func NewAssignmentService(db *gorm.DB) *AssignmentService {
 	return &AssignmentService{
-		db,
+		db:            db,
+		courseService: NewCourseService(db),
 	}
 }
 
@@ -97,4 +99,37 @@ func (c *AssignmentCron) UpdateAssignment() error {
 	}
 
 	return nil
+}
+
+func convertToAssignmentView(assignment models.Assignment) models.AssignmentView {
+	return models.AssignmentView{
+		Title: assignment.Title,
+		Href:  assignment.Href,
+		Date:  assignment.Date,
+	}
+}
+
+func (c *AssignmentService) GetAssignments(name string) ([]models.AssignmentView, error) {
+	var all_assignment []models.Assignment
+	id, err := c.courseService.GetCourseIdByName(name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tx := c.db.Where(models.Assignment{
+		CourseID: id,
+	}).Order("id DESC").Find(&all_assignment)
+
+	if tx.Error != nil {
+		return nil, fmt.Errorf("500: %v", tx.Error.Error())
+	}
+
+	var assignment_view []models.AssignmentView
+
+	for _, a := range all_assignment {
+		assignment_view = append(assignment_view, convertToAssignmentView(a))
+	}
+
+	return assignment_view, nil
 }

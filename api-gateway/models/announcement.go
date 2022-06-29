@@ -11,3 +11,9 @@ type Announcement struct {
 	Course   Course
 	Date     string `json:"publishDate"`
 }
+
+type AnnouncementView struct {
+	Title string `json:"title"`
+	Href  string `json:"href"`
+	Date  string `json:"publishDate"`
+}

@@ -1,3 +1,6 @@
 **/target/**/*
 api-gateway/db/**/*
 .env
+
+# Some tmp file
+*.exe

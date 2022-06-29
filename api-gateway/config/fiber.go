@@ -1,20 +1,28 @@
 package config
 
 import (
+	"api-gateway/handler"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
-func SetupFiber() (*fiber.App, error) {
+func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 	app := fiber.New(fiber.Config{
 		Immutable: true,
 	})
 
-	app.Get("/api/*", func(c *fiber.Ctx) error {
+	courseHandler := handler.NewCourseHandler(db)
+	assignmentHandler := handler.NewAssignmentHandler(db)
+
+	app.Get("/api/test/*", func(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("✋ %s", c.Params("*"))
 		return c.SendString(msg) // => ✋ register
 	})
+
+	app.Get("/api/courses", courseHandler.GetAllCourses)
+	app.Get("/api/assignment", assignmentHandler.GetAssignments)
 
 	return app, nil
 }

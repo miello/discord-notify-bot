@@ -1,4 +1,4 @@
-package scraper
+package handler
 
 import (
 	"api-gateway/services/scraper"
