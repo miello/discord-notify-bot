@@ -85,7 +85,7 @@ func (c *CourseCron) UpdateCourses() error {
 	return nil
 }
 
-func (c *CourseService) GetAvailableCourses(year string, semester string) ([]models.Course, error) {
+func (c *CourseService) GetAvailableCourses(year string, semester string, name string) ([]models.Course, error) {
 	var all_course []models.Course
 	var err error
 
@@ -105,6 +105,10 @@ func (c *CourseService) GetAvailableCourses(year string, semester string) ([]mod
 		var year_num int
 		year_num, err = strconv.Atoi(year)
 		query.Year = year_num
+	}
+
+	if name != "" {
+		query.Title = name
 	}
 
 	if err != nil {

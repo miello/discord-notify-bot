@@ -22,8 +22,9 @@ func NewCourseHandler(DB *gorm.DB) *CourseHandler {
 func (s *CourseHandler) GetAllCourses(c *fiber.Ctx) error {
 	year := c.Query("year")
 	semester := c.Query("semester")
+	name := c.Query("name")
 
-	courses, err := s.courseService.GetAvailableCourses(year, semester)
+	courses, err := s.courseService.GetAvailableCourses(year, semester, name)
 
 	if err != nil {
 		arr := strings.Split(err.Error(), ": ")
