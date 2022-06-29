@@ -2,8 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,14 +11,10 @@ func SetupFiber() (*fiber.App, error) {
 		Immutable: true,
 	})
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-
-	go func() {
-		_ = <-c
-		fmt.Println("Gracefully shutting down...")
-		_ = app.Shutdown()
-	}()
+	app.Get("/api/*", func(c *fiber.Ctx) error {
+		msg := fmt.Sprintf("✋ %s", c.Params("*"))
+		return c.SendString(msg) // => ✋ register
+	})
 
 	return app, nil
 }

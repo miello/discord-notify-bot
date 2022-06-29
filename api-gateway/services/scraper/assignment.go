@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"api-gateway/config"
 	"api-gateway/models"
 	"api-gateway/utils"
 	"fmt"
@@ -11,15 +10,27 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func UpdateAssignment() error {
+type AssignmentService struct {
+	DB *gorm.DB
+}
+
+func NewAssignmentService(db *gorm.DB) *AssignmentService {
+	return &AssignmentService{
+		DB: db,
+	}
+}
+
+// This supposes to be used only in internal cron job, it must not leak to handler
+func (c *AssignmentService) UpdateAssignment() error {
 	fmt.Println("Start update all assignment")
 	BASE_URL := os.Getenv("BASE_URL")
 
 	var all_course []models.Course
-	tx := config.DB.Find(&all_course)
+	tx := c.DB.Find(&all_course)
 
 	if tx.Error != nil {
 		log.Fatalf("Error occured. Error is: %s", tx.Error)
@@ -57,7 +68,7 @@ func UpdateAssignment() error {
 			due_date := strings.Split(s.Find(".cv-due-col").Find(".sr-only").Text(), " ")
 			due_date_text := strings.Join(due_date[2:], " ")
 
-			config.DB.Clauses(clause.OnConflict{
+			c.DB.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
 				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
 			}).Create(&models.Assignment{

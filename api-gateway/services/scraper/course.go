@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"api-gateway/config"
 	"api-gateway/models"
 	"api-gateway/utils"
 	"fmt"
@@ -11,11 +10,22 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-// This determines to use only in internal cron job, it must not leak to handler
-func UpdateCourses() error {
+type CourseService struct {
+	DB *gorm.DB
+}
+
+func NewCourseService(db *gorm.DB) *CourseService {
+	return &CourseService{
+		DB: db,
+	}
+}
+
+// This supposes to be used only in internal cron job, it must not leak to handler
+func (c *CourseService) UpdateCourses() error {
 	BASE_URL := os.Getenv("BASE_URL")
 	res, err := utils.GetHTML("/?q=courseville")
 
@@ -53,7 +63,7 @@ func UpdateCourses() error {
 			Year:     year_int,
 		}
 
-		config.DB.Clauses(clause.OnConflict{
+		c.DB.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"title", "key", "href", "semester", "year"}),
 		}).Create(&course)

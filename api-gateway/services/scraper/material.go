@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"api-gateway/config"
 	"api-gateway/models"
 	"api-gateway/utils"
 	"fmt"
@@ -10,12 +9,23 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type materialData struct {
 	title string
 	href  string
+}
+
+type MaterialService struct {
+	DB *gorm.DB
+}
+
+func NewMaterialService(db *gorm.DB) *MaterialService {
+	return &MaterialService{
+		DB: db,
+	}
 }
 
 func extractMaterialDetail(s *goquery.Selection) materialData {
@@ -38,11 +48,12 @@ func extractMaterialDetail(s *goquery.Selection) materialData {
 	}
 }
 
-func UpdateMaterial() error {
+// This supposes to be used only in internal cron job, it must not leak to handler
+func (c *MaterialService) UpdateMaterial() error {
 	fmt.Println("Start update all materials")
 
 	var all_course []models.Course
-	tx := config.DB.Find(&all_course)
+	tx := c.DB.Find(&all_course)
 
 	if tx.Error != nil {
 		return tx.Error
@@ -77,7 +88,7 @@ func UpdateMaterial() error {
 					CourseID:   row.ID,
 				}
 
-				config.DB.Clauses(clause.OnConflict{
+				c.DB.Clauses(clause.OnConflict{
 					Columns:   []clause.Column{{Name: "href"}},
 					DoUpdates: clause.AssignmentColumns([]string{"title", "href", "folder_name", "course_id"}),
 				}).Create(&material_struct)
@@ -93,7 +104,7 @@ func UpdateMaterial() error {
 				CourseID:   row.ID,
 			}
 
-			config.DB.Clauses(clause.OnConflict{
+			c.DB.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "href"}},
 				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "folder_name", "course_id"}),
 			}).Create(&material_struct)

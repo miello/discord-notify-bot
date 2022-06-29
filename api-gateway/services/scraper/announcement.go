@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"api-gateway/config"
 	"api-gateway/models"
 	"api-gateway/utils"
 	"fmt"
@@ -11,14 +10,26 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func UpdateAnnouncements() error {
+type AnnouncementService struct {
+	DB *gorm.DB
+}
+
+func NewAnnouncementService(db *gorm.DB) *AnnouncementService {
+	return &AnnouncementService{
+		DB: db,
+	}
+}
+
+// This supposes to be used only in internal cron job, it must not leak to handler
+func (c *AnnouncementService) UpdateAnnouncements() error {
 	BASE_URL := os.Getenv("BASE_URL")
 
 	var all_course []models.Course
-	tx := config.DB.Find(&all_course)
+	tx := c.DB.Find(&all_course)
 
 	if tx.Error != nil {
 		return tx.Error
@@ -67,7 +78,7 @@ func UpdateAnnouncements() error {
 				CourseID: row.ID,
 			}
 
-			config.DB.Clauses(clause.OnConflict{
+			c.DB.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
 				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
 			}).Create(&announcement)
