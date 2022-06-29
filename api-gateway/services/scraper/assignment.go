@@ -15,22 +15,32 @@ import (
 )
 
 type AssignmentService struct {
-	DB *gorm.DB
+	db *gorm.DB
+}
+
+type AssignmentCron struct {
+	db *gorm.DB
 }
 
 func NewAssignmentService(db *gorm.DB) *AssignmentService {
 	return &AssignmentService{
-		DB: db,
+		db,
+	}
+}
+
+func NewAssignmentCron(db *gorm.DB) *AssignmentCron {
+	return &AssignmentCron{
+		db,
 	}
 }
 
 // This supposes to be used only in internal cron job, it must not leak to handler
-func (c *AssignmentService) UpdateAssignment() error {
+func (c *AssignmentCron) UpdateAssignment() error {
 	fmt.Println("Start update all assignment")
 	BASE_URL := os.Getenv("BASE_URL")
 
 	var all_course []models.Course
-	tx := c.DB.Find(&all_course)
+	tx := c.db.Find(&all_course)
 
 	if tx.Error != nil {
 		log.Fatalf("Error occured. Error is: %s", tx.Error)
@@ -68,7 +78,7 @@ func (c *AssignmentService) UpdateAssignment() error {
 			due_date := strings.Split(s.Find(".cv-due-col").Find(".sr-only").Text(), " ")
 			due_date_text := strings.Join(due_date[2:], " ")
 
-			c.DB.Clauses(clause.OnConflict{
+			c.db.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
 				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
 			}).Create(&models.Assignment{

@@ -5,9 +5,9 @@ import "gorm.io/gorm"
 type Announcement struct {
 	gorm.Model
 	ID       string `gorm:"primaryKey"`
-	Title    string `gorm:"index"`
-	Href     string
+	Title    string `json:"title" gorm:"index"`
+	Href     string `json:"href"`
 	CourseID string
 	Course   Course
-	Date     string
+	Date     string `json:"publishDate"`
 }

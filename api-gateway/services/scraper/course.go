@@ -15,17 +15,27 @@ import (
 )
 
 type CourseService struct {
-	DB *gorm.DB
+	db *gorm.DB
+}
+
+type CourseCron struct {
+	db *gorm.DB
 }
 
 func NewCourseService(db *gorm.DB) *CourseService {
 	return &CourseService{
-		DB: db,
+		db,
+	}
+}
+
+func NewCourseCron(db *gorm.DB) *CourseCron {
+	return &CourseCron{
+		db,
 	}
 }
 
 // This supposes to be used only in internal cron job, it must not leak to handler
-func (c *CourseService) UpdateCourses() error {
+func (c *CourseCron) UpdateCourses() error {
 	BASE_URL := os.Getenv("BASE_URL")
 	res, err := utils.GetHTML("/?q=courseville")
 
@@ -63,7 +73,7 @@ func (c *CourseService) UpdateCourses() error {
 			Year:     year_int,
 		}
 
-		c.DB.Clauses(clause.OnConflict{
+		c.db.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"title", "key", "href", "semester", "year"}),
 		}).Create(&course)
@@ -73,4 +83,38 @@ func (c *CourseService) UpdateCourses() error {
 	log.Println("Update available courses successfully")
 
 	return nil
+}
+
+func (c *CourseService) GetAvailableCourses(year string, semester string) ([]models.Course, error) {
+	var all_course []models.Course
+	var err error
+
+	query := &models.Course{}
+
+	if semester != "" {
+		var semester_num int
+		semester_num, err = strconv.Atoi(semester)
+		query.Semester = semester_num
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("400: Failed to parse semester")
+	}
+
+	if year != "" {
+		var year_num int
+		year_num, err = strconv.Atoi(year)
+		query.Year = year_num
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("400: Failed to parse year")
+	}
+
+	tx := c.db.Where(&query).Find(&all_course)
+	if tx.Error != nil {
+		return nil, fmt.Errorf("500: %v", tx.Error.Error())
+	}
+
+	return all_course, nil
 }

@@ -8,10 +8,10 @@ import (
 )
 
 func StartUpdateJob() (*gocron.Scheduler, error) {
-	announcement := scraper.NewAnnouncementService(DB)
-	material := scraper.NewMaterialService(DB)
-	course := scraper.NewCourseService(DB)
-	assignment := scraper.NewAssignmentService(DB)
+	announcement := scraper.NewAnnouncementCron(DB)
+	material := scraper.NewMaterialCron(DB)
+	course := scraper.NewCourseCron(DB)
+	assignment := scraper.NewAssignmentCron(DB)
 
 	s := gocron.NewScheduler(time.UTC)
 

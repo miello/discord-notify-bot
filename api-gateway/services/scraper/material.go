@@ -22,8 +22,18 @@ type MaterialService struct {
 	DB *gorm.DB
 }
 
+type MaterialCron struct {
+	DB *gorm.DB
+}
+
 func NewMaterialService(db *gorm.DB) *MaterialService {
 	return &MaterialService{
+		DB: db,
+	}
+}
+
+func NewMaterialCron(db *gorm.DB) *MaterialCron {
+	return &MaterialCron{
 		DB: db,
 	}
 }
@@ -49,7 +59,7 @@ func extractMaterialDetail(s *goquery.Selection) materialData {
 }
 
 // This supposes to be used only in internal cron job, it must not leak to handler
-func (c *MaterialService) UpdateMaterial() error {
+func (c *MaterialCron) UpdateMaterial() error {
 	fmt.Println("Start update all materials")
 
 	var all_course []models.Course

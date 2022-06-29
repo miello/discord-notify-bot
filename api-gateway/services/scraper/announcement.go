@@ -15,21 +15,31 @@ import (
 )
 
 type AnnouncementService struct {
-	DB *gorm.DB
+	db *gorm.DB
+}
+
+type AnnouncementCron struct {
+	db *gorm.DB
 }
 
 func NewAnnouncementService(db *gorm.DB) *AnnouncementService {
 	return &AnnouncementService{
-		DB: db,
+		db,
+	}
+}
+
+func NewAnnouncementCron(db *gorm.DB) *AnnouncementCron {
+	return &AnnouncementCron{
+		db,
 	}
 }
 
 // This supposes to be used only in internal cron job, it must not leak to handler
-func (c *AnnouncementService) UpdateAnnouncements() error {
+func (c *AnnouncementCron) UpdateAnnouncements() error {
 	BASE_URL := os.Getenv("BASE_URL")
 
 	var all_course []models.Course
-	tx := c.DB.Find(&all_course)
+	tx := c.db.Find(&all_course)
 
 	if tx.Error != nil {
 		return tx.Error
@@ -78,7 +88,7 @@ func (c *AnnouncementService) UpdateAnnouncements() error {
 				CourseID: row.ID,
 			}
 
-			c.DB.Clauses(clause.OnConflict{
+			c.db.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
 				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
 			}).Create(&announcement)

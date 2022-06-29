@@ -7,9 +7,9 @@ import (
 type Assignment struct {
 	gorm.Model
 	ID       string `gorm:"primaryKey"`
-	Title    string `gorm:"index"`
-	Href     string
+	Title    string `json:"title"`
+	Href     string `json:"href"`
 	CourseID string
 	Course   Course
-	Date     string
+	Date     string `json:"dueDate"`
 }
