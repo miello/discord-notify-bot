@@ -19,16 +19,94 @@ type AssignmentCron struct {
 	db *gorm.DB
 }
 
+type loadAssignmentBody struct {
+	Data struct {
+		Html string `json:"html"`
+	} `json:"data"`
+	Next   int    `json:"next"`
+	All    bool   `json:"all"`
+	Status int    `json:"status"`
+	Msg    string `json:"msg"`
+}
+
 func NewAssignmentCron(db *gorm.DB) *AssignmentCron {
 	return &AssignmentCron{
 		db,
 	}
 }
 
+func extractAssignment(s *goquery.Selection, courseId string) models.Assignment {
+	BASE_URL := os.Getenv("BASE_URL")
+	td_el := s.Find("td")
+	title_col := td_el.Find("a")
+
+	title := strings.TrimSpace(title_col.Text())
+
+	href, _ := title_col.Attr("href")
+
+	href_split := strings.Split(href, "/")
+	assignment_id := href_split[len(href_split)-1]
+
+	href = fmt.Sprintf("%v%v", BASE_URL, href)
+
+	due_date := strings.Split(s.Find(".cv-due-col").Find(".sr-only").Text(), " ")
+	due_date_text := strings.Join(due_date[2:], " ")
+
+	return models.Assignment{
+		ID:       assignment_id,
+		Title:    title,
+		Href:     href,
+		Date:     due_date_text,
+		CourseID: courseId,
+	}
+}
+
+func loadMoreAssignment(db *gorm.DB, courseId string) error {
+
+	body := &loadAssignmentBody{
+		Status: 1,
+		Next:   5,
+	}
+
+	for body.Status != 0 && !body.All {
+		println(body.Status, body.All, body.Next)
+
+		form := map[string]string{
+			"cv_cid": courseId,
+			"next":   strconv.Itoa(body.Next),
+		}
+
+		err := utils.GetJSONByFormDataReq("POST", "?q=courseville/ajax/loadmoreassignmentrows", &form, body)
+
+		if err != nil {
+			return fmt.Errorf("%v", err.Error())
+		}
+
+		html := fmt.Sprintf("<html><body><table>%v</table></body></html>", body.Data.Html)
+		println(html)
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+
+		if err != nil {
+			return fmt.Errorf("%v", err.Error())
+		}
+
+		doc.Find("tr").Each(func(i int, s *goquery.Selection) {
+			assignment := extractAssignment(s, courseId)
+			db.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "id"}},
+				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
+			}).Create(&assignment)
+		})
+
+		time.Sleep(5 * time.Second)
+	}
+
+	return nil
+}
+
 // This supposes to be used only in internal cron job, it must not leak to handler
 func (c *AssignmentCron) UpdateAssignment() error {
 	fmt.Println("Start update all assignment")
-	BASE_URL := os.Getenv("BASE_URL")
 
 	var all_course []models.Course
 	tx := c.db.Find(&all_course)
@@ -53,53 +131,27 @@ func (c *AssignmentCron) UpdateAssignment() error {
 			return err
 		}
 
-		form := map[string]string{
-			"cv_cid": row.ID,
-			"next":   strconv.Itoa(5),
-		}
+		ch := make(chan bool, 1)
 
-		var body interface{}
-
-		err = utils.GetJSONByFormDataReq("POST", "?q=courseville/ajax/loadmoreassignmentrows", &form, &body)
-		if err != nil {
-			fmt.Printf("%v", err.Error())
-		}
-
-		fmt.Printf("%v", body)
+		go func() {
+			loadMoreAssignment(c.db, row.ID)
+			ch <- true
+		}()
 
 		doc.Find("table[title='Assignment list'] > tbody > tr").Each(func(i int, s *goquery.Selection) {
-			td_el := s.Find("td")
-			title_col := td_el.Find("a")
-
-			title := strings.TrimSpace(title_col.Text())
-
-			href, _ := title_col.Attr("href")
-
-			href_split := strings.Split(href, "/")
-			assignment_id := href_split[len(href_split)-1]
-
-			href = fmt.Sprintf("%v%v", BASE_URL, href)
-
-			due_date := strings.Split(s.Find(".cv-due-col").Find(".sr-only").Text(), " ")
-			due_date_text := strings.Join(due_date[2:], " ")
-
+			assignment := extractAssignment(s, row.ID)
 			c.db.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
 				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
-			}).Create(&models.Assignment{
-				ID:       assignment_id,
-				Title:    title,
-				Href:     href,
-				Date:     due_date_text,
-				CourseID: row.ID,
-			})
+			}).Create(&assignment)
 		})
+
+		<-ch
 
 		res.Body.Close()
 
 		log.Printf("Update assignment %v successfully\n", row.Title)
-		time.Sleep(10 * time.Second)
-		break
+		time.Sleep(5 * time.Second)
 	}
 
 	return nil

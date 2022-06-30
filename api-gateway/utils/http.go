@@ -18,9 +18,9 @@ type HttpType string
 
 const (
 	POST   HttpType = "POST"
-	GET             = "GET"
-	PUT             = "PUT"
-	DELETE          = "DELETE"
+	GET    HttpType = "GET"
+	PUT    HttpType = "PUT"
+	DELETE HttpType = "DELETE"
 )
 
 var client http.Client
@@ -57,7 +57,7 @@ func GetHTML(path string) (*http.Response, error) {
 	return res, err
 }
 
-func GetJSONByFormDataReq(httpType HttpType, path string, req_body *map[string]string, res_body *interface{}) error {
+func GetJSONByFormDataReq(httpType HttpType, path string, req_body *map[string]string, res_body interface{}) error {
 	BASE_URL := os.Getenv("BASE_URL")
 	SESSION_KEY := os.Getenv("SESSION_KEY")
 	SESSION_VALUE := os.Getenv("SESSION_VALUE")
@@ -95,9 +95,7 @@ func GetJSONByFormDataReq(httpType HttpType, path string, req_body *map[string]s
 	}
 
 	decoder := json.NewDecoder(res.Body)
-	decoder.Decode(res_body)
-
-	return nil
+	return decoder.Decode(res_body)
 }
 
 func ExtractError(err error) (int, models.ResponseError) {
