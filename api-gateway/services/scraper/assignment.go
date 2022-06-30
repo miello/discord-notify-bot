@@ -3,6 +3,7 @@ package scraper
 import (
 	"api-gateway/models"
 	"api-gateway/utils"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -21,9 +22,9 @@ func NewAssignmentService(db *gorm.DB) *AssignmentService {
 
 func convertToAssignmentView(assignment models.Assignment) models.AssignmentView {
 	return models.AssignmentView{
-		Title: assignment.Title,
-		Href:  assignment.Href,
-		Date:  assignment.Date,
+		Title:   assignment.Title,
+		Href:    assignment.Href,
+		DueDate: assignment.DueDate.Format(time.RFC3339),
 	}
 }
 

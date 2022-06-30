@@ -55,13 +55,20 @@ func (c *AnnouncementCron) UpdateAnnouncements() error {
 			return err
 		}
 
+		loc, _ := time.LoadLocation("Asia/Bangkok")
+
 		doc.Find("table[title='Course announcements'] > tbody > tr").Each(func(i int, s *goquery.Selection) {
 			td_root := s.Find("td")
 
 			date_root := td_root.Children().First()
 			desc_root := td_root.Next().Children().First()
 
-			date := date_root.Text()
+			split_date := strings.Split(date_root.Text(), " ")
+
+			date := fmt.Sprintf("20%v-%v-%v", split_date[2], split_date[1], split_date[0])
+
+			time_date, _ := time.ParseInLocation("2006-Jan-02", date, loc)
+
 			title := desc_root.Text()
 			href, _ := desc_root.Attr("href")
 
@@ -71,16 +78,16 @@ func (c *AnnouncementCron) UpdateAnnouncements() error {
 			href = fmt.Sprintf("%v%v", BASE_URL, href)
 
 			announcement := models.Announcement{
-				ID:       id,
-				Title:    title,
-				Href:     href,
-				Date:     date,
-				CourseID: row.ID,
+				ID:          id,
+				Title:       title,
+				Href:        href,
+				PublishDate: time_date,
+				CourseID:    row.ID,
 			}
 
 			c.db.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
-				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
+				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "publish_date", "course_id"}),
 			}).Create(&announcement)
 		})
 

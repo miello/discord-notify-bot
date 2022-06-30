@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -11,11 +13,11 @@ type Assignment struct {
 	Href     string `json:"href"`
 	CourseID string `gorm:"index"`
 	Course   Course
-	Date     string `json:"dueDate"`
+	DueDate  time.Time `json:"dueDate"`
 }
 
 type AssignmentView struct {
-	Title string `json:"title"`
-	Href  string `json:"href"`
-	Date  string `json:"dueDate"`
+	Title   string `json:"title"`
+	Href    string `json:"href"`
+	DueDate string `json:"dueDate"`
 }
