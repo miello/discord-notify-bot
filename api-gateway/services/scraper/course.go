@@ -20,6 +20,7 @@ func NewCourseService(db *gorm.DB) *CourseService {
 
 func convertCourseToView(course *models.Course) models.CourseView {
 	return models.CourseView{
+		ID:       course.ID,
 		Key:      course.Key,
 		Title:    course.Title,
 		Href:     course.Href,

@@ -18,7 +18,7 @@ func StartUpdateJob(db *gorm.DB) (*gocron.Scheduler, error) {
 	s := gocron.NewScheduler(time.UTC)
 
 	_, err := s.Every(1).Day().At("12:00").Do(func() {
-		log.Println("Start updating job")
+		log.Println("Start updating job at", time.Now())
 
 		course.UpdateCourses()
 		assignment.UpdateAssignment()

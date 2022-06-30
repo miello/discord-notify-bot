@@ -41,7 +41,7 @@ func (c *AssignmentService) GetAssignments(id string) ([]models.AssignmentView, 
 
 	var all_assignment []models.Assignment
 
-	tx := c.db.Where(models.Assignment{
+	tx := c.db.Where(&models.Assignment{
 		CourseID: id,
 	}).Order("id DESC").Find(&all_assignment)
 

@@ -73,15 +73,12 @@ func extractAssignment(s *goquery.Selection, courseId string) models.Assignment 
 }
 
 func loadMoreAssignment(db *gorm.DB, courseId string) error {
-
 	body := &loadAssignmentBody{
 		Status: 1,
 		Next:   5,
 	}
 
 	for body.Status != 0 && !body.All {
-		println(body.Status, body.All, body.Next)
-
 		form := map[string]string{
 			"cv_cid": courseId,
 			"next":   strconv.Itoa(body.Next),
@@ -104,7 +101,7 @@ func loadMoreAssignment(db *gorm.DB, courseId string) error {
 			assignment := extractAssignment(s, courseId)
 			db.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},
-				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
+				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "due_date", "course_id"}),
 			}).Create(&assignment)
 		})
 
