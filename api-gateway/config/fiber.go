@@ -22,7 +22,7 @@ func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 	})
 
 	app.Get("/api/courses", courseHandler.GetAllCourses)
-	app.Get("/api/assignment", assignmentHandler.GetAssignments)
+	app.Get("/api/:id/assignment", assignmentHandler.GetAssignments)
 
 	return app, nil
 }

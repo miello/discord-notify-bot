@@ -10,7 +10,7 @@ type Material struct {
 	Href       string `gorm:"primaryKey"`
 	Title      string
 	FolderName string
-	CourseID   string
+	CourseID   string `gorm:"index"`
 	Course     Course
 	CreatedAt  time.Time
 	UpdatedAt  time.Time

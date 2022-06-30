@@ -1,7 +1,7 @@
 package config
 
 import (
-	"api-gateway/services/scraper"
+	"api-gateway/services/cron"
 	"log"
 	"time"
 
@@ -10,10 +10,10 @@ import (
 )
 
 func StartUpdateJob(db *gorm.DB) (*gocron.Scheduler, error) {
-	announcement := scraper.NewAnnouncementCron(db)
-	material := scraper.NewMaterialCron(db)
-	course := scraper.NewCourseCron(db)
-	assignment := scraper.NewAssignmentCron(db)
+	announcement := cron.NewAnnouncementCron(db)
+	material := cron.NewMaterialCron(db)
+	course := cron.NewCourseCron(db)
+	assignment := cron.NewAssignmentCron(db)
 
 	s := gocron.NewScheduler(time.UTC)
 
@@ -24,8 +24,8 @@ func StartUpdateJob(db *gorm.DB) (*gocron.Scheduler, error) {
 		course.UpdateCourses()
 		announcement.UpdateAnnouncements()
 		material.UpdateMaterial()
-		assignment.UpdateAssignment()
 	})
+	assignment.UpdateAssignment()
 
 	s.StartAsync()
 

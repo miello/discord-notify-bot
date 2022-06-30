@@ -3,15 +3,8 @@ package scraper
 import (
 	"api-gateway/models"
 	"api-gateway/utils"
-	"fmt"
-	"log"
-	"os"
-	"strings"
-	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type AssignmentService struct {
@@ -19,86 +12,11 @@ type AssignmentService struct {
 	courseService *CourseService
 }
 
-type AssignmentCron struct {
-	db *gorm.DB
-}
-
 func NewAssignmentService(db *gorm.DB) *AssignmentService {
 	return &AssignmentService{
 		db:            db,
 		courseService: NewCourseService(db),
 	}
-}
-
-func NewAssignmentCron(db *gorm.DB) *AssignmentCron {
-	return &AssignmentCron{
-		db,
-	}
-}
-
-// This supposes to be used only in internal cron job, it must not leak to handler
-func (c *AssignmentCron) UpdateAssignment() error {
-	fmt.Println("Start update all assignment")
-	BASE_URL := os.Getenv("BASE_URL")
-
-	var all_course []models.Course
-	tx := c.db.Find(&all_course)
-
-	if tx.Error != nil {
-		log.Fatalf("Error occured. Error is: %s", tx.Error)
-		return tx.Error
-	}
-
-	for _, row := range all_course {
-		path := fmt.Sprintf("/?q=courseville/course/%v/assignment", row.ID)
-		res, err := utils.GetHTML(path)
-
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-
-		doc, err := goquery.NewDocumentFromReader(res.Body)
-
-		if err != nil {
-			return err
-		}
-
-		doc.Find("table[title='Assignment list'] > tbody > tr").Each(func(i int, s *goquery.Selection) {
-			td_el := s.Find("td")
-			title_col := td_el.Find("a")
-
-			title := strings.TrimSpace(title_col.Text())
-
-			href, _ := title_col.Attr("href")
-
-			href_split := strings.Split(href, "/")
-			assignment_id := href_split[len(href_split)-1]
-
-			href = fmt.Sprintf("%v%v", BASE_URL, href)
-
-			due_date := strings.Split(s.Find(".cv-due-col").Find(".sr-only").Text(), " ")
-			due_date_text := strings.Join(due_date[2:], " ")
-
-			c.db.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},
-				DoUpdates: clause.AssignmentColumns([]string{"title", "href", "date", "course_id"}),
-			}).Create(&models.Assignment{
-				ID:       assignment_id,
-				Title:    title,
-				Href:     href,
-				Date:     due_date_text,
-				CourseID: row.ID,
-			})
-		})
-
-		res.Body.Close()
-
-		log.Printf("Update assignment %v successfully\n", row.Title)
-		time.Sleep(10 * time.Second)
-	}
-
-	return nil
 }
 
 func convertToAssignmentView(assignment models.Assignment) models.AssignmentView {
@@ -109,20 +27,25 @@ func convertToAssignmentView(assignment models.Assignment) models.AssignmentView
 	}
 }
 
-func (c *AssignmentService) GetAssignments(name string) ([]models.AssignmentView, error) {
-	var all_assignment []models.Assignment
-	id, err := c.courseService.GetCourseIdByName(name)
+func (c *AssignmentService) GetAssignments(id string) ([]models.AssignmentView, error) {
+	found, err := c.courseService.IsCourseIdExists(id)
 
 	if err != nil {
-		return nil, err
+		return nil, utils.CreateError(500, err.Error())
 	}
+
+	if !found {
+		return nil, utils.CreateError(404, "Not found, maybe api owner does not attend this course")
+	}
+
+	var all_assignment []models.Assignment
 
 	tx := c.db.Where(models.Assignment{
 		CourseID: id,
 	}).Order("id DESC").Find(&all_assignment)
 
 	if tx.Error != nil {
-		return nil, fmt.Errorf("500: %v", tx.Error.Error())
+		return nil, utils.CreateError(500, tx.Error.Error())
 	}
 
 	var assignment_view []models.AssignmentView

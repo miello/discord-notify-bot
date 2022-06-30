@@ -9,7 +9,7 @@ type Assignment struct {
 	ID       string `gorm:"primaryKey"`
 	Title    string `json:"title"`
 	Href     string `json:"href"`
-	CourseID string
+	CourseID string `gorm:"index"`
 	Course   Course
 	Date     string `json:"dueDate"`
 }

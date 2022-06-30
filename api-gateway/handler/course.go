@@ -2,8 +2,7 @@ package handler
 
 import (
 	"api-gateway/services/scraper"
-	"strconv"
-	"strings"
+	"api-gateway/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -27,12 +26,10 @@ func (s *CourseHandler) GetAllCourses(c *fiber.Ctx) error {
 	courses, err := s.courseService.GetAvailableCourses(year, semester, name)
 
 	if err != nil {
-		arr := strings.Split(err.Error(), ": ")
-		status_code, _ := strconv.Atoi(arr[0])
+		status_code, msg := utils.ExtractError(err)
 
-		msg := strings.Join(arr[1:], " ")
-
-		return c.Status(status_code).SendString(msg)
+		c.JSON(msg)
+		return c.SendStatus(status_code)
 	}
 
 	c.JSON(courses)
