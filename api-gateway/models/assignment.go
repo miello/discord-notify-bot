@@ -9,11 +9,11 @@ import (
 type Assignment struct {
 	gorm.Model
 	ID       string `gorm:"primaryKey"`
-	Title    string `json:"title"`
-	Href     string `json:"href"`
+	Title    string
+	Href     string
 	CourseID string `gorm:"index"`
 	Course   Course
-	DueDate  time.Time `json:"dueDate"`
+	DueDate  time.Time `gorm:"not null"`
 }
 
 type AssignmentView struct {

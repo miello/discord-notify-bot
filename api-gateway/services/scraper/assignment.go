@@ -43,7 +43,7 @@ func (c *AssignmentService) GetAssignments(id string) ([]models.AssignmentView, 
 
 	tx := c.db.Where(&models.Assignment{
 		CourseID: id,
-	}).Order("id DESC").Find(&all_assignment)
+	}).Order("due_date DESC").Find(&all_assignment)
 
 	if tx.Error != nil {
 		return nil, utils.CreateError(500, tx.Error.Error())

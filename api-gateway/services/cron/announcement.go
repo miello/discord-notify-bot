@@ -15,12 +15,14 @@ import (
 )
 
 type AnnouncementCron struct {
-	db *gorm.DB
+	db     *gorm.DB
+	course *CourseCron
 }
 
 func NewAnnouncementCron(db *gorm.DB) *AnnouncementCron {
 	return &AnnouncementCron{
-		db,
+		db:     db,
+		course: NewCourseCron(db),
 	}
 }
 
@@ -29,10 +31,10 @@ func (c *AnnouncementCron) UpdateAnnouncements() error {
 	BASE_URL := os.Getenv("BASE_URL")
 
 	var all_course []models.Course
-	tx := c.db.Find(&all_course)
+	err := c.course.GetTargetScraperCourse(&all_course)
 
-	if tx.Error != nil {
-		return tx.Error
+	if err != nil {
+		return err
 	}
 
 	for _, row := range all_course {

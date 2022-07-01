@@ -13,7 +13,7 @@ type Announcement struct {
 	Href        string `json:"href"`
 	CourseID    string `gorm:"index"`
 	Course      Course
-	PublishDate time.Time `json:"publishDate"`
+	PublishDate time.Time `json:"publishDate" gorm:"not null"`
 }
 
 type AnnouncementView struct {

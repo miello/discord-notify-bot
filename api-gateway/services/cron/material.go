@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -19,12 +20,14 @@ type materialData struct {
 }
 
 type MaterialCron struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	course *CourseCron
 }
 
 func NewMaterialCron(db *gorm.DB) *MaterialCron {
 	return &MaterialCron{
-		DB: db,
+		DB:     db,
+		course: NewCourseCron(db),
 	}
 }
 
@@ -38,6 +41,9 @@ func extractMaterialDetail(s *goquery.Selection) materialData {
 	action_el := s.Find("td[data-col='action'] > a")
 	if len(action_el.Nodes) != 0 {
 		href, _ = action_el.Attr("href")
+		if !strings.HasPrefix(href, "https://") {
+			href = fmt.Sprintf("%v%v", BASE_URL, href)
+		}
 	} else {
 		href = fmt.Sprintf("%v%v", BASE_URL, href)
 	}
@@ -53,10 +59,10 @@ func (c *MaterialCron) UpdateMaterial() error {
 	fmt.Println("Start update all materials")
 
 	var all_course []models.Course
-	tx := c.DB.Find(&all_course)
+	err := c.course.GetTargetScraperCourse(&all_course)
 
-	if tx.Error != nil {
-		return tx.Error
+	if err != nil {
+		return err
 	}
 
 	for _, row := range all_course {

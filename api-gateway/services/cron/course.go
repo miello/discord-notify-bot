@@ -74,3 +74,20 @@ func (c *CourseCron) UpdateCourses() error {
 
 	return nil
 }
+
+func (c *CourseCron) GetTargetScraperCourse(all_course *[]models.Course) error {
+	year := os.Getenv("YEAR")
+	semester := os.Getenv("SEMESTER")
+
+	var query models.Course
+	if year != "" {
+		query.Year, _ = strconv.Atoi(year)
+	}
+
+	if semester != "" {
+		query.Semester, _ = strconv.Atoi(semester)
+	}
+
+	tx := c.db.Where(&query).Find(all_course)
+	return tx.Error
+}

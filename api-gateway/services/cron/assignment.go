@@ -16,7 +16,8 @@ import (
 )
 
 type AssignmentCron struct {
-	db *gorm.DB
+	db     *gorm.DB
+	course *CourseCron
 }
 
 type loadAssignmentBody struct {
@@ -31,7 +32,8 @@ type loadAssignmentBody struct {
 
 func NewAssignmentCron(db *gorm.DB) *AssignmentCron {
 	return &AssignmentCron{
-		db,
+		db:     db,
+		course: NewCourseCron(db),
 	}
 }
 
@@ -59,6 +61,7 @@ func extractAssignment(s *goquery.Selection, courseId string) models.Assignment 
 	raw_date := fmt.Sprintf("%v %v, %v %v:00", split_date[1], split_date[0], split_date[2], split_date[4])
 
 	date_time, err := time.ParseInLocation("January 2, 2006 15:04:05", raw_date, loc)
+
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -116,11 +119,11 @@ func (c *AssignmentCron) UpdateAssignment() error {
 	fmt.Println("Start update all assignment")
 
 	var all_course []models.Course
-	tx := c.db.Find(&all_course)
+	err := c.course.GetTargetScraperCourse(&all_course)
 
-	if tx.Error != nil {
-		log.Fatalf("Error occured. Error is: %s", tx.Error)
-		return tx.Error
+	if err != nil {
+		log.Fatalf("Error occured. Error is: %s", err.Error())
+		return err
 	}
 
 	for _, row := range all_course {

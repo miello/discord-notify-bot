@@ -90,7 +90,7 @@ func (c *CourseService) GetCourseIdByName(name string) (string, error) {
 func (c *CourseService) IsCourseIdExists(id string) (bool, error) {
 	var cnt int64
 
-	tx := c.db.Where(&models.Course{
+	tx := c.db.Model(&models.Course{}).Where(&models.Course{
 		ID: id,
 	}).Count(&cnt)
 
