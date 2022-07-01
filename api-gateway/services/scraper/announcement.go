@@ -40,7 +40,7 @@ func (c *AnnouncementService) GetAnnouncements(id string) ([]models.Announcement
 	}
 
 	query := models.Announcement{
-		ID: id,
+		CourseID: id,
 	}
 
 	var raw_announcement []models.Announcement

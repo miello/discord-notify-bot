@@ -16,6 +16,7 @@ func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 	courseHandler := handler.NewCourseHandler(db)
 	assignmentHandler := handler.NewAssignmentHandler(db)
 	materialHandler := handler.NewMaterialHandler(db)
+	announcementHandler := handler.NewAnnouncementHandler(db)
 
 	app.Get("/api/test/*", func(c *fiber.Ctx) error {
 		msg := fmt.Sprintf("✋ %s", c.Params("*"))
@@ -25,6 +26,7 @@ func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 	app.Get("/api/courses", courseHandler.GetAllCourses)
 	app.Get("/api/:id/assignments", assignmentHandler.GetAssignments)
 	app.Get("/api/:id/materials", materialHandler.GetMaterials)
+	app.Get("/api/:id/announcements", announcementHandler.GetAnnouncement)
 
 	return app, nil
 }
