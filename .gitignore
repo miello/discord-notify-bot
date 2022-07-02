@@ -1,4 +1,6 @@
 **/target/**/*
+**/node_modules/**/*
+**/discord-bot/build/**/*
 api-gateway/db/**/*
 .env
 
