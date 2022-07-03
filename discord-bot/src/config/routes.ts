@@ -1,9 +1,9 @@
 import { Collection } from 'discord.js'
-import { ICommand } from './types/command'
+import { ICommand } from '../types/command'
 import { readdirSync } from 'fs'
 import { join } from 'path'
 
-const commandsPath = join(__dirname, 'commands')
+const commandsPath = join(__dirname, '..', 'commands')
 const commandFiles = readdirSync('./src/commands').filter((file) =>
   file.endsWith('.ts')
 )
