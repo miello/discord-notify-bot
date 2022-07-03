@@ -2,7 +2,7 @@ import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { DISCORD_TOKEN, APPLICATION_ID } from '../config/env'
 import { ICommand } from '../types/command'
-import { getCourseChoices } from './courseChoices'
+import { getCourseChoices } from './course'
 
 const rest = new REST({ version: '9' }).setToken(DISCORD_TOKEN)
 

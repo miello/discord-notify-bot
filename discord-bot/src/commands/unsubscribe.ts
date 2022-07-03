@@ -7,7 +7,7 @@ async function execute(interaction: CommandInteraction<CacheType>) {
   unsubscribe(interaction.guildId || '', interaction.channelId || '')
 
   await interaction.reply({
-    content: 'Unsubscribe to daily notification',
+    content: 'This channel have unsubscribed to daily notification',
   })
 }
 

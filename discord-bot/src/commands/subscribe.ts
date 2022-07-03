@@ -4,16 +4,17 @@ import { ICommand } from '../types/command'
 import { schedule } from 'node-cron'
 import { client } from '../config/clientBot'
 import { getSubscriberList, subscribe } from '../utils/subscribe'
+import { getOverviewNotification } from '../utils/course'
 
 schedule(
-  '0 12 * * *',
+  '* * * * *',
   () => {
     console.log('Running daily cron job')
     getSubscriberList().forEach((val) => {
       const guild = client.guilds.cache.get(val[0])
       if (!guild) return
 
-      val[1].forEach((channelId) => {
+      val[1].forEach(async (channelId) => {
         const channel = guild.channels.cache.get(channelId)
 
         if (!channel) return
@@ -21,7 +22,8 @@ schedule(
         const textChannel = channel.isText()
         if (!textChannel) return
 
-        channel.send({ content: 'Hello World' })
+        const embeds = await getOverviewNotification()
+        channel.send({ embeds })
       })
     })
   },
