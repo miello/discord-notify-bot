@@ -1,47 +1,50 @@
 import { SlashCommandBuilder, hyperlink } from '@discordjs/builders'
 import { CacheType, CommandInteraction, MessageEmbed } from 'discord.js'
 import { apiClient } from '../config/axios'
-import { IAssignment } from '../types/assignment'
 import { ICommand } from '../types/command'
 import { extractInteractiveInfo } from '../utils/misc'
-import { isBefore } from 'date-fns'
+import { IAnnouncement } from '../types/announcement'
 
 const execute = async (interaction: CommandInteraction<CacheType>) => {
   const [courseId, title] = extractInteractiveInfo(interaction)
 
-  const resp = await apiClient.get(`/${courseId}/assignments`)
-  const assignments: Array<IAssignment> = resp.data
+  const resp = await apiClient.get(`/${courseId}/announcements`)
+  const assignments: Array<IAnnouncement> = resp.data
 
   const message = new MessageEmbed()
-  message.setTitle(`${title} Assignment`)
+  message.setTitle(`${title} Announcement`)
   message.setThumbnail(
     'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
   )
   message.setColor('YELLOW')
   message.setURL(
-    `https://www.mycourseville.com/?q=courseville/course/${courseId}/assignment`
+    `https://www.mycourseville.com/?q=courseville/course/${courseId}`
   )
 
-  assignments.forEach((val) => {
-    const { dueDate, title, href } = val
-    const dueDateTime = new Date(dueDate)
+  if (assignments) {
+    assignments.forEach((val) => {
+      const { publishDate, title, href } = val
 
-    if (isBefore(dueDateTime, new Date())) return
+      const publishDateTime = new Date(publishDate)
 
-    let dueDateString = dueDateTime.toString().split(' ').slice(1, 5).join(' ')
-    dueDateString = `Due on ${dueDateString}`
-
-    message.addField(title, hyperlink(dueDateString, href))
-  })
+      let publishDateString = publishDateTime
+        .toString()
+        .split(' ')
+        .slice(1, 4)
+        .join(' ')
+      publishDateString = `${publishDateString}`
+      message.addField(publishDateString, hyperlink(title, href))
+    })
+  }
 
   await interaction.reply({ embeds: [message] })
 }
 
 export default {
-  name: 'assignment',
+  name: 'announcement',
   data: new SlashCommandBuilder()
-    .setName('assignment')
-    .setDescription('Get assignment from course'),
+    .setName('announcement')
+    .setDescription('Get announcement from course'),
   execute,
   addCourseChoices: true,
 } as ICommand

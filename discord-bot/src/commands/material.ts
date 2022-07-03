@@ -22,6 +22,9 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
     'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
   )
   embed.setColor('AQUA')
+  embed.setURL(
+    `https://www.mycourseville.com/?q=courseville/course/${courseId}`
+  )
 
   const embedList: EmbedFieldData[] = []
 
