@@ -7,7 +7,7 @@ import { getSubscriberList, subscribe } from '../utils/subscribe'
 import { getOverviewNotification } from '../utils/course'
 
 schedule(
-  '* * * * *',
+  '30 12 * * *',
   () => {
     console.log('Running daily cron job')
     getSubscriberList().forEach((val) => {
