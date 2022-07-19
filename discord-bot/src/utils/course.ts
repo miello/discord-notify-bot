@@ -1,5 +1,5 @@
 import { hyperlink } from '@discordjs/builders'
-import { isBefore, sub } from 'date-fns'
+import { format, isAfter, sub } from 'date-fns'
 import { MessageEmbed } from 'discord.js'
 import { apiClient } from '../config/axios'
 import { IAnnouncement } from '../types/announcement'
@@ -24,6 +24,9 @@ export const getOverviewNotification = async () => {
   const assignmentEmbed = new MessageEmbed()
   const announcementEmbed = new MessageEmbed()
 
+  let foundAssignment = false
+  let foundAnnouncement = false
+
   const resp = await apiClient.get<Array<ICourse>>('/courses')
   const courses = resp.data.map((val) => ({
     name: val.courseTitle,
@@ -38,11 +41,12 @@ export const getOverviewNotification = async () => {
     if (!resp.data) return
 
     const filteredAssignments = resp.data.filter((val) => {
-      return isBefore(new Date(val.dueDate), sub(new Date(), { days: 14 }))
+      return isAfter(new Date(val.dueDate), sub(new Date(), { days: 14 }))
     })
 
     filteredAssignments.forEach((assignment) => {
       const dueDateTime = new Date(assignment.dueDate)
+      foundAssignment = true
 
       let dueDateString = dueDateTime
         .toString()
@@ -66,8 +70,10 @@ export const getOverviewNotification = async () => {
     if (!resp.data) return
 
     const filteredAnnouncement = resp.data.filter((val) => {
-      return isBefore(new Date(val.publishDate), sub(new Date(), { days: 14 }))
+      return isAfter(new Date(val.publishDate), sub(new Date(), { days: 14 }))
     })
+
+    foundAnnouncement = true
 
     filteredAnnouncement.map((announcement) => {
       const publishedDate = new Date(announcement.publishDate)
@@ -88,6 +94,13 @@ export const getOverviewNotification = async () => {
     })
   })
 
+  if (!foundAnnouncement && !foundAssignment) {
+    return [
+      new MessageEmbed()
+        .setTitle(`Notification (${format(new Date(), 'dd MMMM yyyy HH:mm')})`)
+        .setDescription('No new notification found'),
+    ]
+  }
   await Promise.all(promiseAssignment)
   await Promise.all(promiseAnnouncement)
 
