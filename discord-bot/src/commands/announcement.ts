@@ -12,21 +12,24 @@ import { extractInteractiveInfo } from '../utils/misc'
 import { IAnnouncement } from '../types/announcement'
 import { MessageButtonStyles } from 'discord.js/typings/enums'
 import { IPaginationMetadata } from '../types/common'
+import { nanoid } from 'nanoid'
 
 const generateNewAnnouncement = async (
   courseId: string,
   title: string,
+  id: string,
   page?: number
 ): Promise<[MessageEmbed, MessageActionRow]> => {
   const _page = page || 1
   const resp = await apiClient.get(
     `/${courseId}/announcements?page=${_page}&limit=5`
   )
+
   const announcements: Array<IAnnouncement> = resp.data.announcements
   const metadata: IPaginationMetadata = resp.data.meta
 
   const message = new MessageEmbed()
-  message.setTitle(`${title} Announcement`)
+  message.setTitle(`${title} Announcement (${_page}/${metadata.totalPages})`)
   message.setThumbnail(
     'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
   )
@@ -53,12 +56,12 @@ const generateNewAnnouncement = async (
 
   const row = new MessageActionRow().addComponents(
     new MessageButton()
-      .setCustomId(`Prev ${_page}`)
+      .setCustomId(`Prev-${_page}-${id}`)
       .setLabel('Prev')
       .setStyle(MessageButtonStyles.PRIMARY)
       .setDisabled(_page === 1),
     new MessageButton()
-      .setCustomId(`Next ${_page}`)
+      .setCustomId(`Next-${_page}-${id}`)
       .setLabel('Next')
       .setStyle(MessageButtonStyles.SECONDARY)
       .setDisabled(metadata.totalPages === _page)
@@ -69,15 +72,19 @@ const generateNewAnnouncement = async (
 
 const execute = async (interaction: CommandInteraction<CacheType>) => {
   const [courseId, title] = extractInteractiveInfo(interaction)
-  const [message, row] = await generateNewAnnouncement(courseId, title)
+  const newId = nanoid()
+  const [message, row] = await generateNewAnnouncement(courseId, title, newId)
 
   const collector = interaction.channel?.createMessageComponentCollector({
     time: 60000,
   })
 
   collector?.on('collect', async (msg) => {
-    const splitMsg = msg.customId.split(' ')
-    const [command, page] = splitMsg
+    const splitMsg = msg.customId.split('-')
+    const [command, page, btnId] = splitMsg
+
+    if (btnId !== newId) return
+
     let newPage = +page
 
     if (command === 'Prev') --newPage
@@ -86,6 +93,7 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
     const [newMessage, newRow] = await generateNewAnnouncement(
       courseId,
       title,
+      newId,
       newPage
     )
 

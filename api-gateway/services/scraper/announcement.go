@@ -29,7 +29,7 @@ func convertToShortAnnouncement(announcement *models.Announcement) types.ShortAn
 	}
 }
 
-func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (types.AnnouncementView, error) {
+func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int, is_overview bool) (types.AnnouncementView, error) {
 	found, err := c.courseService.IsCourseIdExists(id)
 	var res types.AnnouncementView
 
@@ -48,7 +48,13 @@ func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (
 	var raw_announcement []models.Announcement
 	var number_of_announcement int64
 
-	tx := c.db.Model(&query).Where(&query).Count(&number_of_announcement).Offset(utils.GetOffset(page, limit)).Limit(limit).Find(&raw_announcement)
+	tx := c.db.Model(&query).Where(&query)
+
+	if is_overview {
+		tx = tx.Where(gorm.Expr("publish_date > ?", time.Now().Add(-time.Hour*24*14))).Order("publish_date desc")
+	}
+
+	tx = tx.Count(&number_of_announcement).Offset(utils.GetOffset(page, limit)).Limit(limit).Find(&raw_announcement)
 
 	if tx.Error != nil {
 		return res, utils.CreateError(500, tx.Error.Error())

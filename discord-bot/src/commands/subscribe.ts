@@ -23,7 +23,11 @@ schedule(
         if (!textChannel) return
 
         const embeds = await getOverviewNotification()
-        channel.send({ embeds })
+        const message = await channel.send({ embeds })
+
+        const collector = message.channel?.createMessageComponentCollector({
+          time: 24 * 60 * 60 * 1000,
+        })
       })
     })
   },

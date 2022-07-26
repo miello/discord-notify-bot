@@ -11,12 +11,14 @@ import { IAssignment } from '../types/assignment'
 import { ICommand } from '../types/command'
 import { extractInteractiveInfo } from '../utils/misc'
 // import { isBefore } from 'date-fns'
+import { nanoid } from 'nanoid'
 import { IPaginationMetadata } from '../types/common'
 import { MessageButtonStyles } from 'discord.js/typings/enums'
 
 const generateNewAssignment = async (
   courseId: string,
   title: string,
+  id: string,
   page?: number
 ): Promise<[MessageEmbed, MessageActionRow]> => {
   const _page = page || 1
@@ -50,12 +52,12 @@ const generateNewAssignment = async (
 
   const row = new MessageActionRow().addComponents(
     new MessageButton()
-      .setCustomId(`Prev ${_page}`)
+      .setCustomId(`Prev-${_page}-${id}`)
       .setLabel('Prev')
       .setStyle(MessageButtonStyles.PRIMARY)
       .setDisabled(_page === 1),
     new MessageButton()
-      .setCustomId(`Next ${_page}`)
+      .setCustomId(`Next-${_page}-${id}`)
       .setLabel('Next')
       .setStyle(MessageButtonStyles.SECONDARY)
       .setDisabled(metadata.totalPages === _page)
@@ -66,15 +68,19 @@ const generateNewAssignment = async (
 
 const execute = async (interaction: CommandInteraction<CacheType>) => {
   const [courseId, title] = extractInteractiveInfo(interaction)
-  const [message, row] = await generateNewAssignment(courseId, title)
+  const newId = nanoid()
+  const [message, row] = await generateNewAssignment(courseId, title, newId)
 
   const collector = interaction.channel?.createMessageComponentCollector({
     time: 60000,
   })
 
   collector?.on('collect', async (msg) => {
-    const splitMsg = msg.customId.split(' ')
-    const [command, page] = splitMsg
+    const splitMsg = msg.customId.split('-')
+    const [command, page, id] = splitMsg
+
+    if (id !== newId) return
+
     let newPage = +page
 
     if (command === 'Prev') --newPage
@@ -83,13 +89,17 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
     const [newMessage, newRow] = await generateNewAssignment(
       courseId,
       title,
+      newId,
       newPage
     )
 
     await msg.update({ embeds: [newMessage], components: [newRow] })
   })
 
-  await interaction.reply({ embeds: [message], components: [row] })
+  await interaction.reply({
+    embeds: [message],
+    components: [row],
+  })
 }
 
 export default {
