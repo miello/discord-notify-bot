@@ -6,3 +6,5 @@ api-gateway/db/**/*
 
 # Some tmp file
 *.exe
+**/target/**/*
+**/tmp/**/*
