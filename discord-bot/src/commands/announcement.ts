@@ -1,15 +1,29 @@
 import { SlashCommandBuilder, hyperlink } from '@discordjs/builders'
-import { CacheType, CommandInteraction, MessageEmbed } from 'discord.js'
+import {
+  CacheType,
+  CommandInteraction,
+  MessageActionRow,
+  MessageButton,
+  MessageEmbed,
+} from 'discord.js'
 import { apiClient } from '../config/axios'
 import { ICommand } from '../types/command'
 import { extractInteractiveInfo } from '../utils/misc'
 import { IAnnouncement } from '../types/announcement'
+import { MessageButtonStyles } from 'discord.js/typings/enums'
+import { IPaginationMetadata } from '../types/common'
 
-const execute = async (interaction: CommandInteraction<CacheType>) => {
-  const [courseId, title] = extractInteractiveInfo(interaction)
-
-  const resp = await apiClient.get(`/${courseId}/announcements`)
-  const assignments: Array<IAnnouncement> = resp.data
+const generateNewAnnouncement = async (
+  courseId: string,
+  title: string,
+  page?: number
+): Promise<[MessageEmbed, MessageActionRow]> => {
+  const _page = page || 1
+  const resp = await apiClient.get(
+    `/${courseId}/announcements?page=${_page}&limit=5`
+  )
+  const announcements: Array<IAnnouncement> = resp.data.announcements
+  const metadata: IPaginationMetadata = resp.data.meta
 
   const message = new MessageEmbed()
   message.setTitle(`${title} Announcement`)
@@ -21,8 +35,8 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
     `https://www.mycourseville.com/?q=courseville/course/${courseId}`
   )
 
-  if (assignments) {
-    assignments.forEach((val) => {
+  if (announcements) {
+    announcements.forEach((val) => {
       const { publishDate, title, href } = val
 
       const publishDateTime = new Date(publishDate)
@@ -37,7 +51,48 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
     })
   }
 
-  await interaction.reply({ embeds: [message] })
+  const row = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setCustomId(`Prev ${_page}`)
+      .setLabel('Prev')
+      .setStyle(MessageButtonStyles.PRIMARY)
+      .setDisabled(_page === 1),
+    new MessageButton()
+      .setCustomId(`Next ${_page}`)
+      .setLabel('Next')
+      .setStyle(MessageButtonStyles.SECONDARY)
+      .setDisabled(metadata.totalPages === _page)
+  )
+
+  return [message, row]
+}
+
+const execute = async (interaction: CommandInteraction<CacheType>) => {
+  const [courseId, title] = extractInteractiveInfo(interaction)
+  const [message, row] = await generateNewAnnouncement(courseId, title)
+
+  const collector = interaction.channel?.createMessageComponentCollector({
+    time: 60000,
+  })
+
+  collector?.on('collect', async (msg) => {
+    const splitMsg = msg.customId.split(' ')
+    const [command, page] = splitMsg
+    let newPage = +page
+
+    if (command === 'Prev') --newPage
+    if (command === 'Next') ++newPage
+
+    const [newMessage, newRow] = await generateNewAnnouncement(
+      courseId,
+      title,
+      newPage
+    )
+
+    await msg.update({ embeds: [newMessage], components: [newRow] })
+  })
+
+  await interaction.reply({ embeds: [message], components: [row] })
 }
 
 export default {

@@ -1,13 +1,21 @@
 {
-	"extends": [
-        "eslint:recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:prettier/recommended"
-    ],
-	"env": {
-		"node": true,
-		"es6": true
-	},
-    "root": true,
-    "parser": "@typescript-eslint/parser"
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "env": {
+    "node": true,
+    "es6": true
+  },
+  "root": true,
+  "rules": {
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto"
+      }
+    ]
+  },
+  "parser": "@typescript-eslint/parser"
 }
