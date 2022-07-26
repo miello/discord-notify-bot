@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"api-gateway/models"
+	"api-gateway/types"
 	"api-gateway/utils"
 	"time"
 
@@ -20,15 +21,15 @@ func NewAssignmentService(db *gorm.DB) *AssignmentService {
 	}
 }
 
-func convertToAssignmentView(assignment models.Assignment) models.AssignmentView {
-	return models.AssignmentView{
+func convertToAssignmentView(assignment models.Assignment) types.AssignmentView {
+	return types.AssignmentView{
 		Title:   assignment.Title,
 		Href:    assignment.Href,
 		DueDate: assignment.DueDate.Format(time.RFC3339),
 	}
 }
 
-func (c *AssignmentService) GetAssignments(id string) ([]models.AssignmentView, error) {
+func (c *AssignmentService) GetAssignments(id string, page int, limit int) ([]types.AssignmentView, error) {
 	found, err := c.courseService.IsCourseIdExists(id)
 
 	if err != nil {
@@ -43,13 +44,13 @@ func (c *AssignmentService) GetAssignments(id string) ([]models.AssignmentView, 
 
 	tx := c.db.Where(&models.Assignment{
 		CourseID: id,
-	}).Order("due_date DESC").Find(&all_assignment)
+	}).Offset(utils.GetOffset(page, limit)).Take(limit).Order("due_date DESC").Find(&all_assignment)
 
 	if tx.Error != nil {
 		return nil, utils.CreateError(500, tx.Error.Error())
 	}
 
-	var assignment_view []models.AssignmentView
+	var assignment_view []types.AssignmentView
 
 	for _, a := range all_assignment {
 		assignment_view = append(assignment_view, convertToAssignmentView(a))

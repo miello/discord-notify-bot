@@ -15,9 +15,3 @@ type Assignment struct {
 	Course   Course
 	DueDate  time.Time `gorm:"not null"`
 }
-
-type AssignmentView struct {
-	Title   string `json:"title"`
-	Href    string `json:"href"`
-	DueDate string `json:"dueDate"`
-}

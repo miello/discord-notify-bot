@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"api-gateway/models"
+	"api-gateway/types"
 	"api-gateway/utils"
 	"strconv"
 
@@ -18,8 +19,8 @@ func NewCourseService(db *gorm.DB) *CourseService {
 	}
 }
 
-func convertCourseToView(course *models.Course) models.CourseView {
-	return models.CourseView{
+func convertCourseToView(course *models.Course) types.CourseView {
+	return types.CourseView{
 		ID:       course.ID,
 		Key:      course.Key,
 		Title:    course.Title,
@@ -29,7 +30,7 @@ func convertCourseToView(course *models.Course) models.CourseView {
 	}
 }
 
-func (c *CourseService) GetAvailableCourses(year string, semester string, name string) ([]models.CourseView, error) {
+func (c *CourseService) GetAvailableCourses(year string, semester string, name string) ([]types.CourseView, error) {
 	var all_course []models.Course
 	var err error
 
@@ -64,7 +65,7 @@ func (c *CourseService) GetAvailableCourses(year string, semester string, name s
 		return nil, utils.CreateError(500, tx.Error.Error())
 	}
 
-	var converted_course []models.CourseView
+	var converted_course []types.CourseView
 
 	for _, c2 := range all_course {
 		converted_course = append(converted_course, convertCourseToView(&c2))

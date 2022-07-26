@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"api-gateway/models"
+	"api-gateway/types"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -98,13 +98,13 @@ func GetJSONByFormDataReq(httpType HttpType, path string, req_body *map[string]s
 	return decoder.Decode(res_body)
 }
 
-func ExtractError(err error) (int, models.ResponseError) {
+func ExtractError(err error) (int, types.ResponseError) {
 	arr := strings.Split(err.Error(), ": ")
 	status_code, _ := strconv.Atoi(arr[0])
 
 	msg := strings.Join(arr[1:], " ")
 
-	return status_code, models.ResponseError{
+	return status_code, types.ResponseError{
 		Msg: msg,
 	}
 }

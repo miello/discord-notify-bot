@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"api-gateway/models"
 	"api-gateway/services/scraper"
+	"api-gateway/types"
 	"api-gateway/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +24,7 @@ func (h *MaterialHandler) GetMaterials(c *fiber.Ctx) error {
 	folderName := c.Query("folder")
 
 	if id == "" {
-		c.JSON(&models.ResponseError{
+		c.JSON(&types.ResponseError{
 			Msg: "Required course id",
 		})
 		return c.SendStatus(400)

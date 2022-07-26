@@ -2,7 +2,9 @@ package scraper
 
 import (
 	"api-gateway/models"
+	"api-gateway/types"
 	"api-gateway/utils"
+	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -20,23 +22,24 @@ func NewAnnouncementService(db *gorm.DB) *AnnouncementService {
 	}
 }
 
-func convertToAnnouncementView(announcement *models.Announcement) models.AnnouncementView {
-	return models.AnnouncementView{
+func convertToShortAnnouncement(announcement *models.Announcement) types.ShortAnnouncement {
+	return types.ShortAnnouncement{
 		Title: announcement.Title,
 		Href:  announcement.Href,
 		Date:  announcement.PublishDate.Format(time.RFC3339),
 	}
 }
 
-func (c *AnnouncementService) GetAnnouncements(id string) ([]models.AnnouncementView, error) {
+func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (types.AnnouncementView, error) {
 	found, err := c.courseService.IsCourseIdExists(id)
+	var res types.AnnouncementView
 
 	if err != nil {
-		return nil, utils.CreateError(500, err.Error())
+		return res, utils.CreateError(500, err.Error())
 	}
 
 	if !found {
-		return nil, utils.CreateError(404, "Not found, maybe api owner does not attend this course")
+		return res, utils.CreateError(404, "Not found, maybe api owner does not attend this course")
 	}
 
 	query := models.Announcement{
@@ -45,17 +48,33 @@ func (c *AnnouncementService) GetAnnouncements(id string) ([]models.Announcement
 
 	var raw_announcement []models.Announcement
 
-	tx := c.db.Where(&query).Find(&raw_announcement)
+	var number_of_announcement int64
+	tx := c.db.Where(&query).Count(&number_of_announcement)
 
 	if tx.Error != nil {
-		return nil, utils.CreateError(500, tx.Error.Error())
+		return res, utils.CreateError(500, tx.Error.Error())
 	}
 
-	var announcement_view []models.AnnouncementView
+	tx = c.db.Where(&query).Offset(limit * (page - 1)).Limit(limit).Find(&raw_announcement)
+
+	if tx.Error != nil {
+		return res, utils.CreateError(500, tx.Error.Error())
+	}
+
+	var short_announcements []types.ShortAnnouncement
 
 	for _, announcement := range raw_announcement {
-		announcement_view = append(announcement_view, convertToAnnouncementView(&announcement))
+		short_announcements = append(short_announcements, convertToShortAnnouncement(&announcement))
 	}
 
-	return announcement_view, nil
+	res = types.AnnouncementView{
+		Announcements: short_announcements,
+		Metadata: types.PaginateMetadata{
+			CurrentPage: page,
+			TotalPages:  int(math.Ceil(float64(number_of_announcement) / float64(limit))),
+			TotalItems:  int(number_of_announcement),
+		},
+	}
+
+	return res, nil
 }

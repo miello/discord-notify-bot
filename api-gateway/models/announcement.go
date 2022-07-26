@@ -15,9 +15,3 @@ type Announcement struct {
 	Course      Course
 	PublishDate time.Time `json:"publishDate" gorm:"not null"`
 }
-
-type AnnouncementView struct {
-	Title string `json:"title"`
-	Href  string `json:"href"`
-	Date  string `json:"publishDate"`
-}

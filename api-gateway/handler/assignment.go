@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"api-gateway/models"
 	"api-gateway/services/scraper"
+	"api-gateway/types"
 	"api-gateway/utils"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -20,16 +21,22 @@ func NewAssignmentHandler(DB *gorm.DB) *AssignmentHandler {
 }
 
 func (h *AssignmentHandler) GetAssignments(c *fiber.Ctx) error {
-	id := c.Params("id")
+	_id := c.Params("id", "")
+	_page := c.Query("page", "1")
+	_limit := c.Query("limit", "10")
+
+	id := _id
+	page, _ := strconv.Atoi(_page)
+	limit, _ := strconv.Atoi(_limit)
 
 	if id == "" {
-		c.JSON(&models.ResponseError{
+		c.JSON(&types.ResponseError{
 			Msg: "Required course id",
 		})
 		return c.SendStatus(400)
 	}
 
-	res, err := h.assignmentService.GetAssignments(id)
+	res, err := h.assignmentService.GetAssignments(id, page, limit)
 	if err != nil {
 		status_code, body := utils.ExtractError(err)
 

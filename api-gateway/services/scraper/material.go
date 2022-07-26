@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"api-gateway/models"
+	"api-gateway/types"
 	"api-gateway/utils"
 
 	"gorm.io/gorm"
@@ -19,19 +20,19 @@ func NewMaterialService(db *gorm.DB) *MaterialService {
 	}
 }
 
-func convertToMaterialView(materials *[]models.Material) []models.MaterialView {
-	result_key := map[string][]models.File{}
+func convertToMaterialView(materials *[]models.Material) []types.MaterialView {
+	result_key := map[string][]types.File{}
 	for _, material := range *materials {
-		result_key[material.FolderName] = append(result_key[material.FolderName], models.File{
+		result_key[material.FolderName] = append(result_key[material.FolderName], types.File{
 			Title: material.Title,
 			Href:  material.Href,
 		})
 	}
 
-	var materialView []models.MaterialView
+	var materialView []types.MaterialView
 
 	for folderName, value := range result_key {
-		materialView = append(materialView, models.MaterialView{
+		materialView = append(materialView, types.MaterialView{
 			FolderName: folderName,
 			File:       value,
 		})
@@ -40,7 +41,7 @@ func convertToMaterialView(materials *[]models.Material) []models.MaterialView {
 	return materialView
 }
 
-func (c *MaterialService) GetMaterials(id string, folderName string) ([]models.MaterialView, error) {
+func (c *MaterialService) GetMaterials(id string, folderName string) ([]types.MaterialView, error) {
 	found, err := c.courseService.IsCourseIdExists(id)
 
 	if err != nil {
