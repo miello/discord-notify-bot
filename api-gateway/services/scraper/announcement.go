@@ -4,7 +4,6 @@ import (
 	"api-gateway/models"
 	"api-gateway/types"
 	"api-gateway/utils"
-	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -47,15 +46,9 @@ func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (
 	}
 
 	var raw_announcement []models.Announcement
-
 	var number_of_announcement int64
-	tx := c.db.Where(&query).Count(&number_of_announcement)
 
-	if tx.Error != nil {
-		return res, utils.CreateError(500, tx.Error.Error())
-	}
-
-	tx = c.db.Where(&query).Offset(limit * (page - 1)).Limit(limit).Find(&raw_announcement)
+	tx := c.db.Model(&query).Where(&query).Count(&number_of_announcement).Offset(utils.GetOffset(page, limit)).Limit(limit).Find(&raw_announcement)
 
 	if tx.Error != nil {
 		return res, utils.CreateError(500, tx.Error.Error())
@@ -71,7 +64,7 @@ func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (
 		Announcements: short_announcements,
 		Metadata: types.PaginateMetadata{
 			CurrentPage: page,
-			TotalPages:  int(math.Ceil(float64(number_of_announcement) / float64(limit))),
+			TotalPages:  utils.GetTotalPages(number_of_announcement, limit),
 			TotalItems:  int(number_of_announcement),
 		},
 	}

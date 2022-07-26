@@ -21,40 +21,49 @@ func NewAssignmentService(db *gorm.DB) *AssignmentService {
 	}
 }
 
-func convertToAssignmentView(assignment models.Assignment) types.AssignmentView {
-	return types.AssignmentView{
+func convertToAssignmentView(assignment models.Assignment) types.ShortAssignment {
+	return types.ShortAssignment{
 		Title:   assignment.Title,
 		Href:    assignment.Href,
 		DueDate: assignment.DueDate.Format(time.RFC3339),
 	}
 }
 
-func (c *AssignmentService) GetAssignments(id string, page int, limit int) ([]types.AssignmentView, error) {
+func (c *AssignmentService) GetAssignments(id string, page int, limit int) (types.AssignmentView, error) {
 	found, err := c.courseService.IsCourseIdExists(id)
+	var res types.AssignmentView
 
 	if err != nil {
-		return nil, utils.CreateError(500, err.Error())
+		return res, utils.CreateError(500, err.Error())
 	}
 
 	if !found {
-		return nil, utils.CreateError(404, "Not found, maybe api owner does not attend this course")
+		return res, utils.CreateError(404, "Not found, maybe api owner does not attend this course")
 	}
 
 	var all_assignment []models.Assignment
+	var total int64
 
-	tx := c.db.Where(&models.Assignment{
+	tx := c.db.Model(&models.Assignment{}).Where(&models.Assignment{
 		CourseID: id,
-	}).Offset(utils.GetOffset(page, limit)).Take(limit).Order("due_date DESC").Find(&all_assignment)
+	}).Count(&total).Order("due_date DESC").Offset(utils.GetOffset(page, limit)).Limit(limit).Find(&all_assignment)
 
 	if tx.Error != nil {
-		return nil, utils.CreateError(500, tx.Error.Error())
+		return res, utils.CreateError(500, tx.Error.Error())
 	}
 
-	var assignment_view []types.AssignmentView
+	var assignment_view []types.ShortAssignment
 
 	for _, a := range all_assignment {
 		assignment_view = append(assignment_view, convertToAssignmentView(a))
 	}
 
-	return assignment_view, nil
+	return types.AssignmentView{
+		Assignments: assignment_view,
+		Metadata: types.PaginateMetadata{
+			CurrentPage: page,
+			TotalPages:  utils.GetTotalPages(total, limit),
+			TotalItems:  int(total),
+		},
+	}, nil
 }

@@ -65,7 +65,7 @@ func (c *CourseService) GetAvailableCourses(year string, semester string, name s
 		return nil, utils.CreateError(500, tx.Error.Error())
 	}
 
-	var converted_course []types.CourseView
+	var converted_course []types.CourseView = make([]types.CourseView, 0)
 
 	for _, c2 := range all_course {
 		converted_course = append(converted_course, convertCourseToView(&c2))

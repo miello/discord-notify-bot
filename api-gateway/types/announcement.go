@@ -8,5 +8,5 @@ type ShortAnnouncement struct {
 
 type AnnouncementView struct {
 	Announcements []ShortAnnouncement `json:"announcements"`
-	Metadata      PaginateMetadata    `json:"metadata"`
+	Metadata      PaginateMetadata    `json:"meta"`
 }

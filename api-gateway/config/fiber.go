@@ -9,6 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
+func generateKey(c *fiber.Ctx) string {
+	return c.Request().URI().String()
+}
+
 func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 	app := fiber.New(fiber.Config{
 		Immutable: true,
@@ -16,6 +20,7 @@ func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 
 	app.Use(cache.New(cache.Config{
 		Expiration:   60 * time.Minute,
+		KeyGenerator: generateKey,
 		CacheControl: true,
 	}))
 
