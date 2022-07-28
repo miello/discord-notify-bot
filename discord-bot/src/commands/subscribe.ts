@@ -3,8 +3,10 @@ import { CacheType, CommandInteraction } from 'discord.js'
 import { ICommand } from '../types/command'
 import { schedule } from 'node-cron'
 import { client } from '../config/clientBot'
-import { getSubscriberList, subscribe } from '../utils/subscribe'
+import { getSubscriberList } from '../utils/subscribe'
 import { getOverviewNotification } from '../utils/course'
+import { Guild } from '../models/channel'
+import { extractInteractiveInfo } from '../utils/misc'
 
 schedule(
   '30 12 * * *',
@@ -37,14 +39,38 @@ schedule(
 )
 
 async function execute(interaction: CommandInteraction<CacheType>) {
-  await interaction.reply({
-    content: 'Not Implemented Yet',
-  })
-  return
-  subscribe(interaction.guildId || '', interaction.channelId || '')
+  const [courseId, title] = extractInteractiveInfo(interaction)
 
+  const currentGuild = await Guild.where({
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+  }).findOne()
+
+  if (!currentGuild) {
+    const newGuild = new Guild({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      courseId: [courseId],
+    })
+
+    await newGuild.save()
+    await interaction.reply({
+      content: `This channel have subscribed to ${title} daily notification (every 12:00)`,
+    })
+    return
+  }
+
+  if (currentGuild.courseId.includes(courseId)) {
+    await interaction.reply({
+      content: `This channel have already subscribed to ${title}`,
+    })
+    return
+  }
+
+  currentGuild.courseId.push(courseId)
+  await currentGuild.save()
   await interaction.reply({
-    content: 'This channel have subscribed to daily notification (every 12:00)',
+    content: `This channel have subscribed to ${title} daily notification (every 12:00)`,
   })
 }
 
@@ -54,4 +80,5 @@ export default {
     .setName('subscribe')
     .setDescription('Subscribe for daily notification'),
   execute,
+  addCourseChoices: true,
 } as ICommand

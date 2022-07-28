@@ -1,7 +1,7 @@
 **/target/**/*
 **/node_modules/**/*
 **/discord-bot/build/**/*
-api-gateway/db/**/*
+**/db/**/*
 .env
 
 # Some tmp file

@@ -1,18 +1,31 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { CacheType, CommandInteraction } from 'discord.js'
+import { Guild } from '../models/channel'
 import { ICommand } from '../types/command'
-import { unsubscribe } from '../utils/subscribe'
+import { extractInteractiveInfo } from '../utils/misc'
 
 async function execute(interaction: CommandInteraction<CacheType>) {
+  const [courseId, title] = extractInteractiveInfo(interaction)
+
+  const currentGuild = await Guild.where({
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+  }).findOne()
+
+  const courseIdIdx = currentGuild?.courseId.indexOf(courseId[0])
+
+  if (!currentGuild || courseIdIdx === -1) {
+    await interaction.reply({
+      content: `This channel have not subscribed to ${title} daily notification`,
+    })
+    return
+  }
+
+  currentGuild.courseId.splice(courseIdIdx || 0, 1)
   await interaction.reply({
-    content: 'Not Implemented Yet',
+    content: `This channel have unsubscribed to ${title} daily notification`,
   })
   return
-  unsubscribe(interaction.guildId || '', interaction.channelId || '')
-
-  await interaction.reply({
-    content: 'This channel have unsubscribed to daily notification',
-  })
 }
 
 export default {
