@@ -4,6 +4,10 @@ import { ICommand } from '../types/command'
 import { unsubscribe } from '../utils/subscribe'
 
 async function execute(interaction: CommandInteraction<CacheType>) {
+  await interaction.reply({
+    content: 'Not Implemented Yet',
+  })
+  return
   unsubscribe(interaction.guildId || '', interaction.channelId || '')
 
   await interaction.reply({

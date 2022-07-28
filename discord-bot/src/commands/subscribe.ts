@@ -37,6 +37,10 @@ schedule(
 )
 
 async function execute(interaction: CommandInteraction<CacheType>) {
+  await interaction.reply({
+    content: 'Not Implemented Yet',
+  })
+  return
   subscribe(interaction.guildId || '', interaction.channelId || '')
 
   await interaction.reply({

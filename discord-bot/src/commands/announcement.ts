@@ -1,74 +1,9 @@
-import { SlashCommandBuilder, hyperlink } from '@discordjs/builders'
-import {
-  CacheType,
-  CommandInteraction,
-  MessageActionRow,
-  MessageButton,
-  MessageEmbed,
-} from 'discord.js'
-import { apiClient } from '../config/axios'
+import { SlashCommandBuilder } from '@discordjs/builders'
+import { CacheType, CommandInteraction } from 'discord.js'
 import { ICommand } from '../types/command'
 import { extractInteractiveInfo } from '../utils/misc'
-import { IAnnouncement } from '../types/announcement'
-import { MessageButtonStyles } from 'discord.js/typings/enums'
-import { IPaginationMetadata } from '../types/common'
 import { nanoid } from 'nanoid'
-
-const generateNewAnnouncement = async (
-  courseId: string,
-  title: string,
-  id: string,
-  page?: number
-): Promise<[MessageEmbed, MessageActionRow]> => {
-  const _page = page || 1
-  const resp = await apiClient.get(
-    `/${courseId}/announcements?page=${_page}&limit=5`
-  )
-
-  const announcements: Array<IAnnouncement> = resp.data.announcements
-  const metadata: IPaginationMetadata = resp.data.meta
-
-  const message = new MessageEmbed()
-  message.setTitle(`${title} Announcement (${_page}/${metadata.totalPages})`)
-  message.setThumbnail(
-    'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
-  )
-  message.setColor('YELLOW')
-  message.setURL(
-    `https://www.mycourseville.com/?q=courseville/course/${courseId}`
-  )
-
-  if (announcements) {
-    announcements.forEach((val) => {
-      const { publishDate, title, href } = val
-
-      const publishDateTime = new Date(publishDate)
-
-      let publishDateString = publishDateTime
-        .toString()
-        .split(' ')
-        .slice(1, 4)
-        .join(' ')
-      publishDateString = `${publishDateString}`
-      message.addField(publishDateString, hyperlink(title, href))
-    })
-  }
-
-  const row = new MessageActionRow().addComponents(
-    new MessageButton()
-      .setCustomId(`Prev-${_page}-${id}`)
-      .setLabel('Prev')
-      .setStyle(MessageButtonStyles.PRIMARY)
-      .setDisabled(_page === 1),
-    new MessageButton()
-      .setCustomId(`Next-${_page}-${id}`)
-      .setLabel('Next')
-      .setStyle(MessageButtonStyles.SECONDARY)
-      .setDisabled(metadata.totalPages === _page)
-  )
-
-  return [message, row]
-}
+import { generateNewAnnouncement } from '../utils/course'
 
 const execute = async (interaction: CommandInteraction<CacheType>) => {
   const [courseId, title] = extractInteractiveInfo(interaction)
