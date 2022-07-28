@@ -29,7 +29,7 @@ func convertToAssignmentView(assignment models.Assignment) types.ShortAssignment
 	}
 }
 
-func (c *AssignmentService) GetAssignments(id string, page int, limit int, is_overview bool) (types.AssignmentView, error) {
+func (c *AssignmentService) GetAssignments(id string, page int, limit int) (types.AssignmentView, error) {
 	found, err := c.courseService.IsCourseIdExists(id)
 	var res types.AssignmentView
 
@@ -47,10 +47,6 @@ func (c *AssignmentService) GetAssignments(id string, page int, limit int, is_ov
 	tx := c.db.Model(&models.Assignment{}).Where(&models.Assignment{
 		CourseID: id,
 	})
-
-	if is_overview {
-		tx = tx.Where(gorm.Expr("due_date < ?", time.Now().Add(time.Hour*24*14))).Order("due_date asc")
-	}
 
 	tx = tx.Count(&total).Order("due_date DESC").Offset(utils.GetOffset(page, limit)).Limit(limit).Find(&all_assignment)
 

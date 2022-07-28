@@ -24,12 +24,10 @@ func (h *AssignmentHandler) GetAssignments(c *fiber.Ctx) error {
 	_id := c.Params("id", "")
 	_page := c.Query("page", "1")
 	_limit := c.Query("limit", "10")
-	_mode := c.Query("mode", "normal")
 
 	id := _id
 	page, _ := strconv.Atoi(_page)
 	limit, _ := strconv.Atoi(_limit)
-	mode := _mode
 
 	if id == "" {
 		c.JSON(&types.ResponseError{
@@ -38,7 +36,7 @@ func (h *AssignmentHandler) GetAssignments(c *fiber.Ctx) error {
 		return c.SendStatus(400)
 	}
 
-	res, err := h.assignmentService.GetAssignments(id, page, limit, mode == "overview")
+	res, err := h.assignmentService.GetAssignments(id, page, limit)
 	if err != nil {
 		status_code, body := utils.ExtractError(err)
 
