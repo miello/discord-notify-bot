@@ -73,3 +73,49 @@ func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (
 
 	return res, nil
 }
+
+func (c *AnnouncementService) GetOverviewAnnouncements(id []string, page int, limit int) (types.OverviewAnnouncementView, error) {
+	offset := utils.GetOffset(page, limit)
+	date := time.Now().Add(-14 * 24 * time.Hour)
+	now_date := time.Now()
+
+	var res types.OverviewAnnouncementView
+	var announcement []models.Announcement
+	var count int64
+
+	tx := c.db.Model(&models.Announcement{}).Where(gorm.Expr("publish_date > ? AND publish_date < ?", date, now_date)).Where(gorm.Expr("course_id IN (?)", id))
+	if tx.Error != nil {
+		return res, utils.CreateError(500, tx.Error.Error())
+	}
+
+	tx = tx.Count(&count).Order("publish_date desc").Offset(offset).Limit(limit).Preload("Course").Find(&announcement)
+	if tx.Error != nil {
+		return res, utils.CreateError(500, tx.Error.Error())
+	}
+
+	var announcement_view []types.OverviewAnnouncement = make([]types.OverviewAnnouncement, 0)
+
+	for _, a := range announcement {
+		announcement_view = append(announcement_view, convertToOverviewAnnouncement(a))
+	}
+
+	res = types.OverviewAnnouncementView{
+		Overview: announcement_view,
+		Metadata: types.PaginateMetadata{
+			CurrentPage: page,
+			TotalPages:  utils.GetTotalPages(count, limit),
+			TotalItems:  int(count),
+		},
+	}
+
+	return res, nil
+}
+
+func convertToOverviewAnnouncement(a models.Announcement) types.OverviewAnnouncement {
+	return types.OverviewAnnouncement{
+		CourseTitle: a.Course.Title,
+		Title:       a.Title,
+		Href:        a.Href,
+		Date:        a.PublishDate.Format(time.RFC3339),
+	}
+}

@@ -48,3 +48,28 @@ func (h *AnnouncementHandler) GetAnnouncement(c *fiber.Ctx) error {
 
 	return nil
 }
+
+func (h *AnnouncementHandler) GetOverviewAnnouncement(c *fiber.Ctx) error {
+	var query types.IGetOverviewQuery
+	c.QueryParser(&query)
+
+	if query.Page == 0 {
+		query.Page = 1
+	}
+
+	if query.Limit == 0 {
+		query.Limit = 10
+	}
+
+	res, err := h.service.GetOverviewAnnouncements(query.Id, query.Page, query.Limit)
+	if err != nil {
+		status_code, body := utils.ExtractError(err)
+
+		c.JSON(body)
+		return c.SendStatus(status_code)
+	}
+
+	c.JSON(res)
+
+	return nil
+}

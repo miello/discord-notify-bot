@@ -33,6 +33,8 @@ func SetupFiber(db *gorm.DB) (*fiber.App, error) {
 	app.Get("/api/:id/assignments", assignmentHandler.GetAssignments)
 	app.Get("/api/:id/materials", materialHandler.GetMaterials)
 	app.Get("/api/:id/announcements", announcementHandler.GetAnnouncement)
+	app.Get("/api/assignments/overview", assignmentHandler.GetOverviewAssignment)
+	app.Get("/api/announcements/overview", announcementHandler.GetOverviewAnnouncement)
 
 	return app, nil
 }

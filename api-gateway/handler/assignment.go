@@ -48,3 +48,28 @@ func (h *AssignmentHandler) GetAssignments(c *fiber.Ctx) error {
 
 	return c.SendStatus(200)
 }
+
+func (h *AssignmentHandler) GetOverviewAssignment(c *fiber.Ctx) error {
+	var query types.IGetOverviewQuery
+	c.QueryParser(&query)
+
+	if query.Page == 0 {
+		query.Page = 1
+	}
+
+	if query.Limit == 0 {
+		query.Limit = 10
+	}
+
+	res, err := h.assignmentService.GetOverviewAssignments(query.Id, query.Page, query.Limit)
+	if err != nil {
+		status_code, body := utils.ExtractError(err)
+
+		c.JSON(body)
+		return c.SendStatus(status_code)
+	}
+
+	c.JSON(res)
+
+	return c.SendStatus(200)
+}
