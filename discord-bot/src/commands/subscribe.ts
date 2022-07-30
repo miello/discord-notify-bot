@@ -3,40 +3,75 @@ import { CacheType, CommandInteraction } from 'discord.js'
 import { ICommand } from '../types/command'
 import { schedule } from 'node-cron'
 import { client } from '../config/clientBot'
-import { getSubscriberList } from '../utils/subscribe'
-// import { getOverviewNotification } from '../utils/course'
 import { Guild } from '../models/channel'
 import { extractInteractiveInfo } from '../utils/misc'
+import { generateNewOverview } from '../utils/course'
+import { nanoid } from 'nanoid'
 
-// schedule(
-//   '30 12 * * *',
-//   () => {
-//     console.log('Running daily cron job')
-//     getSubscriberList().forEach((val) => {
-//       const guild = client.guilds.cache.get(val[0])
-//       if (!guild) return
+schedule(
+  '30 12 * * *',
+  async () => {
+    console.log('Running daily cron job')
+    const subscribe_guild = await Guild.find()
+    subscribe_guild.forEach(async ({ guildId, channelId, courseId }) => {
+      const newId = nanoid()
+      if (!guildId || !channelId || courseId.length === 0) return
 
-//       val[1].forEach(async (channelId) => {
-//         const channel = guild.channels.cache.get(channelId)
+      const guild = client.guilds.cache.get(guildId)
+      if (!guild) return
 
-//         if (!channel) return
+      const channel = guild.channels.cache.get(channelId)
+      if (!channel) return
 
-//         const textChannel = channel.isText()
-//         if (!textChannel) return
+      const textChannel = channel.isText()
+      if (!textChannel) return
 
-//         const [embeds, row] = await getOverviewNotification()
-//         const message = await channel.send({ embeds, components: row })
+      const [embeds, row] = await generateNewOverview(
+        newId,
+        1,
+        'announcements',
+        courseId
+      )
+      const currentMessage = await channel.send({ embeds, components: row })
 
-//         const collector = message.channel?.createMessageComponentCollector({
-//           time: 24 * 60 * 60 * 1000,
-//         })
-//       })
-//     })
-//   },
-//   {
-//     timezone: 'Asia/Bangkok',
-//   }
-// )
+      const collector = currentMessage.channel?.createMessageComponentCollector(
+        {
+          time: 60000,
+        }
+      )
+
+      collector?.on('collect', async (msg) => {
+        const splitMsg = msg.customId.split('#')
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [_, id, command, type, page] = splitMsg
+        const overviewType = type as 'announcements' | 'assignments'
+
+        if (id !== newId) return
+
+        let newPage = +page || 1
+
+        if (command === 'Prev') --newPage
+        if (command === 'Next') ++newPage
+        if (command === 'Change') {
+          newPage = 1
+        }
+
+        const [newMessage, newRow] = await generateNewOverview(
+          newId,
+          newPage,
+          overviewType,
+          courseId
+        )
+
+        await msg.update({ embeds: newMessage, components: newRow })
+      })
+    })
+  },
+  {
+    timezone: 'Asia/Bangkok',
+  }
+)
 
 async function execute(interaction: CommandInteraction<CacheType>) {
   const [courseId, title] = extractInteractiveInfo(interaction)
