@@ -12,7 +12,7 @@ async function execute(interaction: CommandInteraction<CacheType>) {
     channelId: interaction.channelId,
   }).findOne()
 
-  const courseIdIdx = currentGuild?.courseId.indexOf(courseId[0])
+  const courseIdIdx = currentGuild?.courseId.indexOf(courseId)
 
   if (!currentGuild || courseIdIdx === -1) {
     await interaction.reply({
@@ -22,6 +22,13 @@ async function execute(interaction: CommandInteraction<CacheType>) {
   }
 
   currentGuild.courseId.splice(courseIdIdx || 0, 1)
+
+  if (currentGuild.courseId.length === 0) {
+    currentGuild.delete()
+  } else {
+    currentGuild.save()
+  }
+
   await interaction.reply({
     content: `This channel have unsubscribed to ${title} daily notification`,
   })
@@ -34,4 +41,5 @@ export default {
     .setName('unsubscribe')
     .setDescription('Unsubscribe for daily notification'),
   execute,
+  addCourseChoices: true,
 } as ICommand
