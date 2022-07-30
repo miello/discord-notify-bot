@@ -3,3 +3,7 @@ export interface IAnnouncement {
   href: string
   publishDate: string
 }
+
+export interface IOverviewAnnouncement extends IAnnouncement {
+  courseTitle: string
+}

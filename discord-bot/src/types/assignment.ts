@@ -3,3 +3,7 @@ export interface IAssignment {
   href: string
   dueDate: string
 }
+
+export interface IOverviewAssignment extends IAssignment {
+  courseTitle: string
+}

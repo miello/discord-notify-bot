@@ -2,8 +2,10 @@ import { hyperlink } from '@discordjs/builders'
 import { MessageActionRow, MessageButton, MessageEmbed } from 'discord.js'
 import { MessageButtonStyles } from 'discord.js/typings/enums'
 import { apiClient } from '../config/axios'
+import { AnnouncementDTO, OverviewAnnouncementDTO } from '../dtos/announcement'
+import { AssignmentDTO, OverviewAssignmentDTO } from '../dtos/assignment'
 import { IAnnouncement } from '../types/announcement'
-import { IAssignment } from '../types/assignment'
+import { IAssignment, IOverviewAssignment } from '../types/assignment'
 import { IPaginationMetadata } from '../types/common'
 import { ICourse } from '../types/course'
 
@@ -21,6 +23,15 @@ export async function getCourseChoices() {
   return choices
 }
 
+export const generateNewEmbed = () => {
+  const message = new MessageEmbed()
+  message.setThumbnail(
+    'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
+  )
+  message.setColor('YELLOW')
+  return message
+}
+
 export const generateNewAnnouncement = async (
   courseId: string,
   title: string,
@@ -28,19 +39,15 @@ export const generateNewAnnouncement = async (
   page?: number
 ): Promise<[MessageEmbed, MessageActionRow]> => {
   const _page = page || 1
-  const resp = await apiClient.get(
+  const resp = await apiClient.get<AnnouncementDTO>(
     `/${courseId}/announcements?page=${_page}&limit=5`
   )
 
-  const announcements: Array<IAnnouncement> = resp.data.announcements
-  const metadata: IPaginationMetadata = resp.data.meta
+  const announcements = resp.data.announcements
+  const metadata = resp.data.meta
 
-  const message = new MessageEmbed()
+  const message = generateNewEmbed()
   message.setTitle(`${title} Announcement (${_page}/${metadata.totalPages})`)
-  message.setThumbnail(
-    'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
-  )
-  message.setColor('YELLOW')
   message.setURL(
     `https://www.mycourseville.com/?q=courseville/course/${courseId}`
   )
@@ -84,18 +91,14 @@ export const generateNewAssignment = async (
   page?: number
 ): Promise<[MessageEmbed, MessageActionRow]> => {
   const _page = page || 1
-  const resp = await apiClient.get(
+  const resp = await apiClient.get<AssignmentDTO>(
     `/${courseId}/assignments?page=${_page}&limit=5`
   )
   const assignments: Array<IAssignment> = resp.data.assignments
   const metadata: IPaginationMetadata = resp.data.meta
 
-  const message = new MessageEmbed()
+  const message = generateNewEmbed()
   message.setTitle(`${title} Assignment (${_page}/${metadata.totalPages})`)
-  message.setThumbnail(
-    'https://images-ext-2.discordapp.net/external/4Q85mjDG7508BRnWbBibIMLsL1QYffvT7aq5b4HDaxM/https/www.mycourseville.com/sites/all/modules/courseville/files/logo/cv-logo.png'
-  )
-  message.setColor('YELLOW')
   message.setURL(
     `https://www.mycourseville.com/?q=courseville/course/${courseId}/assignment`
   )
@@ -128,11 +131,124 @@ export const generateNewAssignment = async (
   return [message, row]
 }
 
-export const getOverviewNotification = async () => {
-  const assignmentEmbed = new MessageEmbed()
-  const announcementEmbed = new MessageEmbed()
+export const generateNewOverview = async (
+  id: string,
+  page: number,
+  type: 'assignments' | 'announcements',
+  courseId: string[]
+): Promise<[MessageEmbed[], MessageActionRow[]]> => {
+  const message = generateNewEmbed()
 
-  const rowsAction = new MessageActionRow().addComponents(new MessageButton())
+  const resp = await apiClient.get(
+    `/${type}/overview?page=${page}&limit=5&id=${courseId}`,
+    {
+      params: {
+        id: courseId,
+        page,
+        limit: 5,
+      },
+    }
+  )
 
-  return [assignmentEmbed, announcementEmbed]
+  let maxPage = 0
+
+  if (type === 'assignments') {
+    const data = resp.data as OverviewAssignmentDTO
+    const assignments = data.assignments
+    const metadata = data.meta
+
+    message.setTitle(
+      `Assignment Daily Notification (${metadata.currentPage}/${metadata.totalPages})`
+    )
+
+    assignments.forEach((val) => {
+      const { dueDate, title, href, courseTitle } = val
+      const dueDateTime = new Date(dueDate)
+
+      // if (isBefore(dueDateTime, new Date())) return
+
+      let dueDateString = dueDateTime
+        .toString()
+        .split(' ')
+        .slice(1, 5)
+        .join(' ')
+      dueDateString = `Due on ${dueDateString}`
+
+      message.addField(
+        dueDateString,
+        `${courseTitle}: ${hyperlink(title, href)}`
+      )
+    })
+
+    maxPage = metadata.totalPages
+  }
+
+  if (type === 'announcements') {
+    const data = resp.data as OverviewAnnouncementDTO
+    const announcements = data.announcements
+    const metadata = data.meta
+
+    message.setTitle(
+      `Announcement Daily Notification (${metadata.currentPage}/${metadata.totalPages})`
+    )
+
+    announcements.forEach((val) => {
+      const { publishDate, title, href, courseTitle } = val
+
+      const publishDateTime = new Date(publishDate)
+
+      let publishDateString = publishDateTime
+        .toString()
+        .split(' ')
+        .slice(1, 4)
+        .join(' ')
+      publishDateString = `${publishDateString}`
+
+      message.addField(
+        publishDateString,
+        `${courseTitle}: ${hyperlink(title, href)}`
+      )
+    })
+
+    maxPage = metadata.totalPages
+  }
+
+  const typeAction = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setStyle('SUCCESS')
+      .setLabel('Assignments')
+      .setCustomId(`overview_${id}-Change-assignments`)
+      .setDisabled(type === 'assignments'),
+    new MessageButton()
+      .setStyle('SECONDARY')
+      .setLabel('Announcements')
+      .setCustomId(`overview_${id}-Change-announcements`)
+      .setDisabled(type === 'announcements')
+  )
+
+  const pageAction = new MessageActionRow().addComponents(
+    new MessageButton()
+      .setStyle('SECONDARY')
+      .setLabel('Prev')
+      .setCustomId(`overview_${id}-Prev-${type}-${page}`)
+      .setDisabled(page === 1),
+    new MessageButton()
+      .setStyle('PRIMARY')
+      .setLabel('Next')
+      .setCustomId(`overview_${id}-Next-${type}-${page}`)
+      .setDisabled(page >= maxPage)
+  )
+
+  return [[message], [typeAction, pageAction]]
 }
+
+// export const getOverviewNotification = async (
+//   id: string,
+//   page: number,
+//   type: string,
+//   courseId: string[]
+// ): Promise<[MessageEmbed[], MessageActionRow[]]> => {
+//   const title = type[0].toLocaleUpperCase() + type.slice(1)
+//   message.setTitle(`${title} daily notification (page ${page})`)
+
+// }

@@ -19,6 +19,6 @@ type AnnouncementView struct {
 }
 
 type OverviewAnnouncementView struct {
-	Overview []OverviewAnnouncement `json:"overviews"`
-	Metadata PaginateMetadata       `json:"meta"`
+	Announcements []OverviewAnnouncement `json:"announcements"`
+	Metadata      PaginateMetadata       `json:"meta"`
 }
