@@ -76,7 +76,7 @@ func (c *AnnouncementService) GetAnnouncements(id string, page int, limit int) (
 
 func (c *AnnouncementService) GetOverviewAnnouncements(id []string, page int, limit int) (types.OverviewAnnouncementView, error) {
 	offset := utils.GetOffset(page, limit)
-	date := time.Now().Add(-90 * 24 * time.Hour)
+	date := time.Now().Add(-14 * 24 * time.Hour)
 	now_date := time.Now()
 
 	var res types.OverviewAnnouncementView

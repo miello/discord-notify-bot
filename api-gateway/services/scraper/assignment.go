@@ -96,7 +96,7 @@ func (c *AssignmentService) GetOverviewAssignments(id []string, page int, limit 
 	}
 
 	res = types.OverviewAssignmentView{
-		Overview: assignment_view,
+		Assignments: assignment_view,
 		Metadata: types.PaginateMetadata{
 			CurrentPage: page,
 			TotalPages:  utils.GetTotalPages(count, limit),

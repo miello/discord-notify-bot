@@ -70,12 +70,12 @@ export const generateNewAnnouncement = async (
 
   const row = new MessageActionRow().addComponents(
     new MessageButton()
-      .setCustomId(`Prev-${_page}-${id}`)
+      .setCustomId(`Prev#${_page}#${id}`)
       .setLabel('Prev')
       .setStyle(MessageButtonStyles.PRIMARY)
       .setDisabled(_page === 1),
     new MessageButton()
-      .setCustomId(`Next-${_page}-${id}`)
+      .setCustomId(`Next#${_page}#${id}`)
       .setLabel('Next')
       .setStyle(MessageButtonStyles.SECONDARY)
       .setDisabled(metadata.totalPages === _page)
@@ -117,12 +117,12 @@ export const generateNewAssignment = async (
 
   const row = new MessageActionRow().addComponents(
     new MessageButton()
-      .setCustomId(`Prev-${_page}-${id}`)
+      .setCustomId(`Prev#${_page}#${id}`)
       .setLabel('Prev')
       .setStyle(MessageButtonStyles.PRIMARY)
       .setDisabled(_page === 1),
     new MessageButton()
-      .setCustomId(`Next-${_page}-${id}`)
+      .setCustomId(`Next#${_page}#${id}`)
       .setLabel('Next')
       .setStyle(MessageButtonStyles.SECONDARY)
       .setDisabled(metadata.totalPages === _page)
@@ -180,6 +180,10 @@ export const generateNewOverview = async (
       )
     })
 
+    if (assignments.length === 0) {
+      message.setDescription('Not found')
+    }
+
     maxPage = metadata.totalPages
   }
 
@@ -210,6 +214,10 @@ export const generateNewOverview = async (
       )
     })
 
+    if (announcements.length === 0) {
+      message.setDescription('Not found')
+    }
+
     maxPage = metadata.totalPages
   }
 
@@ -217,12 +225,12 @@ export const generateNewOverview = async (
     new MessageButton()
       .setStyle('SUCCESS')
       .setLabel('Assignments')
-      .setCustomId(`overview_${id}-Change-assignments`)
+      .setCustomId(`overview#${id}#Change#assignments`)
       .setDisabled(type === 'assignments'),
     new MessageButton()
       .setStyle('SECONDARY')
       .setLabel('Announcements')
-      .setCustomId(`overview_${id}-Change-announcements`)
+      .setCustomId(`overview#${id}#Change#announcements`)
       .setDisabled(type === 'announcements')
   )
 
@@ -230,25 +238,14 @@ export const generateNewOverview = async (
     new MessageButton()
       .setStyle('SECONDARY')
       .setLabel('Prev')
-      .setCustomId(`overview_${id}-Prev-${type}-${page}`)
+      .setCustomId(`overview#${id}#Prev#${type}#${page}`)
       .setDisabled(page === 1),
     new MessageButton()
       .setStyle('PRIMARY')
       .setLabel('Next')
-      .setCustomId(`overview_${id}-Next-${type}-${page}`)
+      .setCustomId(`overview#${id}#Next#${type}#${page}`)
       .setDisabled(page >= maxPage)
   )
 
   return [[message], [typeAction, pageAction]]
 }
-
-// export const getOverviewNotification = async (
-//   id: string,
-//   page: number,
-//   type: string,
-//   courseId: string[]
-// ): Promise<[MessageEmbed[], MessageActionRow[]]> => {
-//   const title = type[0].toLocaleUpperCase() + type.slice(1)
-//   message.setTitle(`${title} daily notification (page ${page})`)
-
-// }

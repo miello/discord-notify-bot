@@ -27,19 +27,20 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
       'announcements',
       courseId
     )
-    await interaction.reply({ embeds, components: row })
+    const currentMessage = await channel.send({ embeds, components: row })
 
-    const collector = interaction.channel?.createMessageComponentCollector({
+    const collector = currentMessage.channel?.createMessageComponentCollector({
       time: 60000,
     })
 
     collector?.on('collect', async (msg) => {
-      const splitMsg = msg.customId.split('-')
+      const splitMsg = msg.customId.split('#')
 
-      const [id, command, type, page] = splitMsg
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const [_, id, command, type, page] = splitMsg
       const overviewType = type as 'announcements' | 'assignments'
 
-      if (id.split('_')[1] !== newId) return
+      if (id !== newId) return
 
       let newPage = +page || 1
 

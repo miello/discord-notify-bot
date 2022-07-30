@@ -19,6 +19,6 @@ type AssignmentView struct {
 }
 
 type OverviewAssignmentView struct {
-	Overview []OverviewAssignment `json:"overviews"`
-	Metadata PaginateMetadata     `json:"meta"`
+	Assignments []OverviewAssignment `json:"assignments"`
+	Metadata    PaginateMetadata     `json:"meta"`
 }

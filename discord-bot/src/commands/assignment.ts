@@ -16,7 +16,7 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
   })
 
   collector?.on('collect', async (msg) => {
-    const splitMsg = msg.customId.split('-')
+    const splitMsg = msg.customId.split('#')
     const [command, page, id] = splitMsg
 
     if (id !== newId) return
