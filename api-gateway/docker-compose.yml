@@ -2,8 +2,13 @@ version: '3.1'
 
 services:
   db:
+    container_name: db
     image: postgres
     restart: always
+
+    env_file:
+      - .env.prod
+
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -11,6 +16,31 @@ services:
 
     ports:
       - ${DATABASE_PORT}:5432
+    
+    networks:
+      - gateway
 
     volumes:
       - ./db:/var/lib/postgresql/data
+
+  gateway:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+
+    links:
+      - "db:database"
+
+    env_file:
+      - .env.prod
+
+    restart: always
+    depends_on:
+      - db
+    
+    networks:
+      - gateway
+
+networks:
+  gateway:
+    name: gateway

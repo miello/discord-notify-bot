@@ -3,6 +3,8 @@
 **/discord-bot/build/**/*
 **/db/**/*
 .env
+.env.*
+!.env.example
 
 # Some tmp file
 *.exe
