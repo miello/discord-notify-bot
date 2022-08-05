@@ -7,12 +7,17 @@ import { Guild } from '../models/channel'
 import { extractInteractiveInfo } from '../utils/misc'
 import { generateNewOverview } from '../utils/course'
 import { nanoid } from 'nanoid'
+import { updateSlashCommand } from '../utils/slashCommand'
+import { commandsList } from '../config/routes'
 
 schedule(
   '30 12 * * *',
   async () => {
     console.log('Running daily cron job')
+
+    await updateSlashCommand(Array.from(commandsList.values()))
     const subscribe_guild = await Guild.find()
+
     subscribe_guild.forEach(async ({ guildId, channelId, courseId }) => {
       const newId = nanoid()
       if (!guildId || !channelId || courseId.length === 0) return
