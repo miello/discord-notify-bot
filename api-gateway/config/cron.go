@@ -17,7 +17,16 @@ func StartUpdateJob(db *gorm.DB) (*gocron.Scheduler, error) {
 
 	s := gocron.NewScheduler(time.UTC)
 
-	_, err := s.Every(1).Day().At("12:00").Do(func() {
+	location, err := time.LoadLocation("Asia/Bangkok")
+
+	if err != nil {
+		log.Println("Unfortunately can't load a location")
+		log.Println(err)
+	} else {
+		s.ChangeLocation(location)
+	}
+
+	_, err = s.Every(1).Day().At("0:00").Do(func() {
 		log.Println("Start updating job at", time.Now())
 
 		course.UpdateCourses()

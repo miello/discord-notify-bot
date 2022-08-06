@@ -6,7 +6,7 @@ services:
     restart: always
 
     env_file:
-      - ./.env.prod
+      - ./.env
 
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
@@ -29,7 +29,7 @@ services:
       - mongodb
     
     env_file:
-      - ./.env.prod
+      - ./.env
 
     networks:
       - gateway

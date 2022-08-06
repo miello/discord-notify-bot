@@ -54,6 +54,15 @@ func GetHTML(path string) (*http.Response, error) {
 		return nil, fmt.Errorf("error with status code: %v", res.StatusCode)
 	}
 
+	// doc, err := goquery.NewDocumentFromReader(res.Body)
+
+	// el := doc.Find("*:contains('Please login with either of the following choices.')")
+
+	// if el.Length() > 0 {
+	// 	log.Fatalf("Please login with either of the following choices.")
+	// 	return nil, fmt.Errorf("Please contact to bot owner to change key")
+	// }
+
 	return res, err
 }
 
