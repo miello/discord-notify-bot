@@ -18,7 +18,7 @@ for (const file of commandFiles) {
 
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const command: ICommand = require(filePath).default
-  commandsList.set(command.data.name, command)
+  commandsList.set(command.commandName, command)
 }
 
 export { commandsList }

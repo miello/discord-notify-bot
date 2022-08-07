@@ -1,4 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import { CacheType, CommandInteraction } from 'discord.js'
 import { ICommand } from '../types/command'
 import { extractInteractiveInfo } from '../utils/misc'
@@ -40,9 +39,8 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
 
 export default {
   name: 'announcement',
-  data: new SlashCommandBuilder()
-    .setName('announcement')
-    .setDescription('Get announcement from course'),
+  commandName: 'announcement',
+  description: 'Get announement from course',
   execute,
   addCourseChoices: true,
 } as ICommand

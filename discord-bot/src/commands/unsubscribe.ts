@@ -1,4 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import { CacheType, CommandInteraction } from 'discord.js'
 import { Guild } from '../models/channel'
 import { ICommand } from '../types/command'
@@ -37,9 +36,8 @@ async function execute(interaction: CommandInteraction<CacheType>) {
 
 export default {
   name: 'unsubscribe',
-  data: new SlashCommandBuilder()
-    .setName('unsubscribe')
-    .setDescription('Unsubscribe for daily notification'),
+  commandName: 'unsubscribe',
+  description: 'Unsubscribe for daily notification',
   execute,
   addCourseChoices: true,
 } as ICommand

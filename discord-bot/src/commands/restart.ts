@@ -1,4 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import { CacheType, CommandInteraction } from 'discord.js'
 import { client } from '../config/clientBot'
 import { BOT_OWNER_ID, DISCORD_TOKEN } from '../config/env'
@@ -27,8 +26,7 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
 
 export default {
   name: 'restart',
-  data: new SlashCommandBuilder()
-    .setName('restart')
-    .setDescription('Restart bot server'),
+  commandName: 'restart',
+  description: 'Restart bot server',
   execute,
 } as ICommand

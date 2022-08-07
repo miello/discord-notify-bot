@@ -1,4 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import { CacheType, CommandInteraction } from 'discord.js'
 import { ICommand } from '../types/command'
 import { schedule } from 'node-cron'
@@ -116,9 +115,8 @@ async function execute(interaction: CommandInteraction<CacheType>) {
 
 export default {
   name: 'subscribe',
-  data: new SlashCommandBuilder()
-    .setName('subscribe')
-    .setDescription('Subscribe for daily notification'),
+  commandName: 'subscribe',
+  description: 'Subscribe for daily notification',
   execute,
   addCourseChoices: true,
 } as ICommand

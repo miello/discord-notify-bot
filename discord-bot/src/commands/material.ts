@@ -1,4 +1,4 @@
-import { hyperlink, SlashCommandBuilder } from '@discordjs/builders'
+import { hyperlink } from '@discordjs/builders'
 import {
   CacheType,
   CommandInteraction,
@@ -52,9 +52,8 @@ const execute = async (interaction: CommandInteraction<CacheType>) => {
 
 export default {
   name: 'material',
-  data: new SlashCommandBuilder()
-    .setName('material')
-    .setDescription('Get material from course'),
+  commandName: 'material',
+  description: 'Get material from course',
   execute,
   addCourseChoices: true,
 } as ICommand

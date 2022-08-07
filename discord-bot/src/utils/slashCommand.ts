@@ -1,3 +1,4 @@
+import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from '@discordjs/rest'
 import { Routes } from 'discord-api-types/v9'
 import { DISCORD_TOKEN, APPLICATION_ID } from '../config/env'
@@ -11,8 +12,10 @@ export const updateSlashCommand = async (executes: Array<ICommand>) => {
     const choices = await getCourseChoices()
     const commands = executes
       .map((val) => {
+        const newCommand = new SlashCommandBuilder()
+        newCommand.setName(val.name).setDescription(val.description)
         if (val.addCourseChoices) {
-          val.data.addStringOption((option) =>
+          newCommand.addStringOption((option) =>
             option
               .setName('course')
               .setDescription('Course to get material info for')
@@ -20,7 +23,7 @@ export const updateSlashCommand = async (executes: Array<ICommand>) => {
               .addChoices(...choices)
           )
         }
-        return val.data
+        return newCommand
       })
       .map((val) => val.toJSON())
 

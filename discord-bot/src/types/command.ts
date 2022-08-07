@@ -1,9 +1,9 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
 import { CacheType, CommandInteraction } from 'discord.js'
 
 export interface ICommand {
   name: string
-  data: SlashCommandBuilder
+  commandName: string
+  description: string
   execute: (x: CommandInteraction<CacheType>) => Promise<void>
   addCourseChoices: boolean
 }
