@@ -40,7 +40,7 @@ schedule(
 
       const collector = currentMessage.channel?.createMessageComponentCollector(
         {
-          time: 60000,
+          time: 24 * 60 * 60 * 1000,
         }
       )
 

@@ -42,7 +42,7 @@ export const generateNewAnnouncement = async (
     `/${courseId}/announcements?page=${_page}&limit=5`
   )
 
-  const announcements = resp.data.announcements
+  const announcements = resp.data.announcements || []
   const metadata = resp.data.meta
 
   const message = generateNewEmbed()
@@ -93,7 +93,7 @@ export const generateNewAssignment = async (
   const resp = await apiClient.get<AssignmentDTO>(
     `/${courseId}/assignments?page=${_page}&limit=5`
   )
-  const assignments: Array<IAssignment> = resp.data.assignments
+  const assignments: Array<IAssignment> = resp.data.assignments || []
   const metadata: IPaginationMetadata = resp.data.meta
 
   const message = generateNewEmbed()
