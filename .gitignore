@@ -1,2 +1,12 @@
-target/**/*
+**/target/**/*
+**/node_modules/**/*
+**/discord-bot/build/**/*
+**/db/**/*
 .env
+.env.*
+!.env.example
+
+# Some tmp file
+*.exe
+**/target/**/*
+**/tmp/**/*
